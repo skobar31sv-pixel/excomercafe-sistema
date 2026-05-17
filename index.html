@@ -9554,13 +9554,80 @@ window.imprimirResumenVentasPeriodo = function(){
   if (typeof renderResumenVentasPeriodo === 'function') renderResumenVentasPeriodo();
   var desde = document.getElementById('reporte-resumen-desde')?.value || '';
   var hasta = document.getElementById('reporte-resumen-hasta')?.value || '';
-  if (typeof imprimirTablasPorTitulo === 'function') {
-    imprimirTablasPorTitulo('Resumen de Ventas y Remesas ' + desde + ' a ' + hasta, ['#tabla-resumen-ventas-pendientes', '#tabla-resumen-ventas-remesados']);
-  } else if (typeof imprimirTablaPorTitulo === 'function') {
-    imprimirTablaPorTitulo('Resumen de Ventas y Remesas ' + desde + ' a ' + hasta, '#tabla-resumen-ventas-pendientes');
-  } else {
-    window.print();
+  var bancoSelect = document.getElementById('reporte-resumen-banco');
+  var banco = bancoSelect && bancoSelect.value ? bancoSelect.value : 'Todos los bancos';
+  var periodoSelect = document.getElementById('reporte-resumen-periodo');
+  var periodo = periodoSelect && periodoSelect.options[periodoSelect.selectedIndex]
+    ? periodoSelect.options[periodoSelect.selectedIndex].text
+    : 'Periodo';
+  var kpis = document.querySelector('#resumen-ventas-periodo .report-summary-kpis');
+  var pendientes = document.querySelector('#tabla-resumen-ventas-pendientes');
+  var remesados = document.querySelector('#tabla-resumen-ventas-remesados');
+  var limpiar = typeof limpiarTablaParaImpresion === 'function'
+    ? limpiarTablaParaImpresion
+    : function(tabla){ return tabla ? tabla.cloneNode(true) : null; };
+  var pendientesHtml = pendientes ? limpiar(pendientes).outerHTML : '<p>No hay datos pendientes.</p>';
+  var remesadosHtml = remesados ? limpiar(remesados).outerHTML : '<p>No hay datos remesados.</p>';
+  var kpisHtml = kpis ? kpis.cloneNode(true).outerHTML : '';
+  var titulo = 'Resumen de Ventas y Remesas';
+  var w = window.open('', '_blank');
+  if (!w) {
+    alert('El navegador bloqueo la ventana de impresion.');
+    return;
   }
+  w.document.write(`
+    <html>
+    <head>
+      <title>${titulo}</title>
+      <style>
+        @page{size:letter landscape;margin:10mm;}
+        body{font-family:Arial,sans-serif;color:#0b1f33;margin:0;padding:18px;background:#fff;}
+        .report-head{border-bottom:3px solid #1a3c5e;padding-bottom:10px;margin-bottom:12px;}
+        h1{font-size:22px;margin:0;text-align:center;letter-spacing:.5px;text-transform:uppercase;}
+        .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;font-size:12px;}
+        .meta div{border:1px solid #b9d7f0;background:#eef7ff;border-radius:6px;padding:7px 9px;}
+        .meta span{display:block;color:#3d5a78;font-size:10px;text-transform:uppercase;font-weight:700;margin-bottom:3px;}
+        .report-summary-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0;}
+        .report-summary-kpi{border:1px solid #b9d7f0;border-radius:6px;background:#f8fbff;padding:8px;}
+        .report-summary-kpi span{display:block;text-transform:uppercase;font-size:10px;color:#3d5a78;font-weight:700;margin-bottom:4px;}
+        .report-summary-kpi strong{font-size:16px;color:#002b55;}
+        .report-summary-kpi.pending strong{color:#b91c1c;}
+        .report-summary-kpi.done strong{color:#15803d;}
+        h2{font-size:15px;margin:16px 0 6px;color:#102f4f;text-transform:uppercase;border-left:5px solid #d79a1e;padding-left:8px;}
+        table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;}
+        th{background:#1a3c5e;color:#fff;text-align:left;padding:7px;border:1px solid #17334f;}
+        td{padding:6px 7px;border:1px solid #c4d9ee;}
+        tfoot td{font-weight:700;background:#eaf4ff;}
+        .report-pending{color:#b91c1c;font-weight:700;}
+        .report-done{color:#15803d;font-weight:700;}
+        .btn-remesado{background:#bbf7d0;color:#166534;border-radius:5px;padding:3px 7px;font-weight:700;display:inline-block;}
+        .footer{margin-top:14px;font-size:10px;color:#64748b;text-align:center;border-top:1px solid #dbeafe;padding-top:8px;}
+        @media print{body{padding:0;}.no-print{display:none!important;}}
+      </style>
+    </head>
+    <body>
+      <div class="report-head">
+        <h1>${titulo}</h1>
+        <div class="meta">
+          <div><span>Periodo</span>${periodo}</div>
+          <div><span>Desde</span>${desde || '-'}</div>
+          <div><span>Hasta</span>${hasta || '-'}</div>
+          <div><span>Banco</span>${banco}</div>
+        </div>
+      </div>
+      ${kpisHtml}
+      <h2>Pendientes por remesar</h2>
+      ${pendientesHtml}
+      <h2>Remesados</h2>
+      ${remesadosHtml}
+      <div class="footer">EXCOMERCAFE - Reporte generado: ${new Date().toLocaleString()}</div>
+      <script>
+        window.onload = function(){ window.print(); };
+      <\/script>
+    </body>
+    </html>
+  `);
+  w.document.close();
 };
 
 // FUNCIÓN PARA TOGGLE DETALLE DE BANCO
