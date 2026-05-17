@@ -11201,6 +11201,11 @@ document.addEventListener('DOMContentLoaded', function() {
       .toLowerCase();
   }
 
+  function bancoBloqueado(nombre){
+    var key = bancoNormKey(nombre);
+    return key === 'davivienda' || key === 'banco davivienda';
+  }
+
   var BANK_CANONICAL = [
     { nombre:'BAC Credomatic', cuenta:'200992790', keys:['bac', 'bac credomatic'] },
     { nombre:'Banco Agricola', cuenta:'560-005547-0', keys:['agricola', 'banco agricola'] },
@@ -11210,6 +11215,7 @@ document.addEventListener('DOMContentLoaded', function() {
   ];
 
   window.normalizarNombreBancoReporte = function(nombre){
+    if (bancoBloqueado(nombre)) return '0';
     var key = bancoNormKey(nombre);
     var found = BANK_CANONICAL.find(function(b){ return b.keys.indexOf(key) >= 0; });
     return found ? found.nombre : String(nombre || '').trim();
@@ -11273,6 +11279,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function getCuentaBanco(nombre){
     if(!nombre || nombre === '0') return '';
+    if(bancoBloqueado(nombre)) return '';
     var cuentaCanonica = cuentaBancoCanonica(nombre);
     if(cuentaCanonica) return cuentaCanonica;
     try {
@@ -11289,7 +11296,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addBanco(nombre, cuenta){
       nombre = window.normalizarNombreBancoReporte(nombre);
-      if(!nombre || seen[nombre]) return;
+      if(!nombre || nombre === '0' || bancoBloqueado(nombre) || seen[nombre]) return;
       var cuentaFinal = String(cuenta || getCuentaBanco(nombre) || '').trim();
       if(!cuentaFinal) return;
       seen[nombre] = true;
@@ -11351,10 +11358,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function getBanco(record){
     if(record.banco && record.banco !== '0') {
+      if(bancoBloqueado(record.banco)) return '0';
       var banco = window.normalizarNombreBancoReporte(record.banco);
       return getCuentaBanco(banco) ? banco : '0';
     }
     if(record.remesado && isNaN(Number(record.remesado)) && record.remesado !== '0') {
+      if(bancoBloqueado(record.remesado)) return '0';
       var remesadoBanco = window.normalizarNombreBancoReporte(record.remesado);
       return getCuentaBanco(remesadoBanco) ? remesadoBanco : '0';
     }
@@ -11367,6 +11376,25 @@ document.addEventListener('DOMContentLoaded', function() {
     if(record.remesaManual !== undefined && record.remesaManual !== '') return readNumber(record.remesaManual);
     if(record.remesado !== undefined && record.remesado !== '' && !isNaN(Number(record.remesado))) return readNumber(record.remesado);
     return 0;
+  }
+
+  function limpiarDaviviendaLocal(){
+    var hist = getHist();
+    var changed = false;
+    hist.forEach(function(record){
+      if(!record) return;
+      if(bancoBloqueado(record.banco) || bancoBloqueado(record.remesado)){
+        record.banco = '';
+        record.remesado = false;
+        record.dineroRemesado = 0;
+        record.dinero_remesado = 0;
+        record.remesadoMonto = 0;
+        record.fecha_remesado = '';
+        record.supabase_synced = false;
+        changed = true;
+      }
+    });
+    if(changed) saveHist(hist);
   }
 
   function recordToRow(record, originalIndex){
@@ -11476,7 +11504,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if(readNumber(value) > 0) hist[index].fecha_remesado = new Date().toISOString();
     }
     if(field === 'banco'){
-      hist[index].banco = value ? window.normalizarNombreBancoReporte(value) : '';
+      hist[index].banco = value && !bancoBloqueado(value) ? window.normalizarNombreBancoReporte(value) : '';
     }
     hist[index].supabase_synced = false;
     saveHist(hist);
@@ -11534,6 +11562,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   document.addEventListener('DOMContentLoaded', function(){
+    limpiarDaviviendaLocal();
     setTableShell();
     if(typeof renderBancos === 'function') renderBancos();
     setTimeout(function(){
