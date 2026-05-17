@@ -1,0 +1,893 @@
+/* Distribucion fija por agromercado */
+.distribucion-matriz-card .card-body {
+  padding: 20px 22px;
+}
+
+.dist-topbar {
+  display: grid;
+  grid-template-columns: 180px minmax(260px, 1fr);
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.dist-fecha input {
+  max-width: 180px;
+}
+
+.dist-observaciones input {
+  width: 100%;
+}
+
+.dist-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.dist-badge-tiendona {
+  background: #1a3c5e;
+}
+
+.dist-badge-cda {
+  background: #e8a020;
+}
+
+.dist-table-wrap {
+  overflow: auto;
+  max-height: 68vh;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.dist-matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 980px;
+  font-size: 0.8rem;
+}
+
+.dist-matrix-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--table-header);
+  color: #fff;
+  padding: 9px 10px;
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dist-matrix-table th.dist-destino-col {
+  left: 0;
+  z-index: 4;
+  text-align: left;
+  min-width: 300px;
+}
+
+.dist-matrix-table td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 6px 8px;
+  text-align: center;
+  background: #fff;
+}
+
+.dist-matrix-table td.dist-destino-cell {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  text-align: left;
+  min-width: 300px;
+  max-width: 360px;
+  background: #f8fbff;
+  border-right: 1px solid var(--border-color);
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.dist-matrix-table tr:nth-child(even) td {
+  background: #f9fafb;
+}
+
+.dist-matrix-table tr:nth-child(even) td.dist-destino-cell {
+  background: #edf6ff;
+}
+
+.dist-matrix-table input.dist-qty {
+  width: 86px;
+  min-width: 86px;
+  border: 1.5px solid #111827;
+  border-radius: 7px;
+  padding: 7px 8px;
+  text-align: center;
+  font-weight: 700;
+  background: #fff3ed;
+  color: #111827;
+}
+
+.dist-matrix-table input.dist-qty:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  background: #fff;
+}
+
+@media (max-width: 800px) {
+  .dist-topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .dist-fecha input {
+    max-width: none;
+  }
+
+  .dist-matrix-table {
+    min-width: 900px;
+  }
+}
+
+.resumen-grid.resumen-stock-live > div {
+  border-width: 2px;
+  font-weight: 700;
+}
+
+.resumen-grid.resumen-stock-live > div span {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.resumen-grid.resumen-stock-live > div.stock-low {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.resumen-grid.resumen-stock-live > div.stock-warning {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+}
+
+.resumen-grid.resumen-stock-live > div.stock-ok {
+  background: #f0fdf4 !important;
+  border-color: #22c55e !important;
+  color: #166534 !important;
+}
+
+/* Control de venta por agromercado */
+.venta-matriz-card {
+  margin-top: 16px;
+}
+
+.venta-table-wrap {
+  max-height: min(78vh, 720px);
+}
+
+.venta-digitar-table thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+}
+
+.venta-digitar-table thead tr:nth-child(2) th {
+  position: sticky;
+  top: 31px;
+  z-index: 11;
+}
+
+.venta-digitar-table thead th.venta-municipio-col,
+.venta-digitar-table thead th.venta-agromercado-col {
+  z-index: 14;
+}
+
+.venta-matrix-table .venta-agro-name {
+  display: block;
+  font-weight: 800;
+  font-size: 0.72rem;
+  line-height: 1.05;
+}
+
+.venta-matrix-table .venta-agro-type {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #1a3c5e;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.venta-summary-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.venta-summary-row > div {
+  border: 2px solid #b7d7f0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.venta-summary-row > div span {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.venta-summary-row > div.stock-low {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.venta-summary-row > div.stock-warning {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+}
+
+.venta-summary-row > div.stock-ok {
+  background: #f0fdf4 !important;
+  border-color: #22c55e !important;
+  color: #166534 !important;
+}
+
+@media (max-width: 900px) {
+  .venta-summary-row {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+}
+
+
+/* Digitar matrix extension */
+.venta-matrix-table.venta-digitar-table {
+  min-width: 3100px;
+}
+
+.venta-digitar-table th.venta-prod-head {
+  background: #204a70;
+  color: #fff;
+  border-bottom: 2px solid #e8a020;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.4px;
+  padding: 6px 5px;
+}
+
+.venta-digitar-table th.venta-sub-head {
+  background: #f8fafc;
+  color: #1a3c5e;
+  font-size: 0.62rem;
+  min-width: 62px;
+  padding: 5px 4px;
+}
+
+.venta-digitar-table .venta-municipio-col,
+.venta-digitar-table .venta-municipio-cell {
+  left: 0;
+  min-width: 150px;
+  width: 150px;
+}
+
+.venta-digitar-table .venta-agromercado-col,
+.venta-digitar-table .venta-agro-cell {
+  left: 150px;
+  min-width: 270px;
+  width: 270px;
+}
+
+.venta-digitar-table .venta-municipio-cell {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #1a3c5e;
+  line-height: 1.05;
+}
+
+.venta-digitar-table input.venta-cell {
+  width: 54px;
+  min-width: 54px;
+  height: 20px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+}
+
+.venta-digitar-table input.venta-calc {
+  background: #eef6ff;
+  color: #1a3c5e;
+  border-color: #b7d7f0;
+  font-weight: 800;
+}
+
+.venta-digitar-table input.venta-diferencia {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.venta-digitar-table .venta-total-head,
+.venta-digitar-table .venta-row-total {
+  min-width: 74px;
+}
+
+.venta-digitar-table td {
+  padding: 3px 5px;
+}
+
+.venta-digitar-table td.dist-destino-cell {
+  padding: 5px 7px;
+}
+
+.venta-digitar-table th.venta-municipio-col,
+.venta-digitar-table td.venta-municipio-cell {
+  left: 0 !important;
+  min-width: 118px !important;
+  width: 118px !important;
+  max-width: 118px !important;
+}
+
+.venta-digitar-table th.venta-agromercado-col,
+.venta-digitar-table td.venta-agro-cell {
+  left: 118px !important;
+  min-width: 260px !important;
+  width: 260px !important;
+  max-width: 260px !important;
+}
+
+.venta-matrix-note {
+  margin: -3px 0 12px;
+  color: #516275;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+
+/* Warehouse balance */
+#cuadre-bodegas-card {
+  margin-top: 16px;
+}
+
+.warehouse-balance-card {
+  margin-bottom: 16px;
+}
+
+.warehouse-table-wrap {
+  overflow-x: auto;
+}
+
+.warehouse-bottom-wrap {
+  margin-top: 26px;
+}
+
+.warehouse-balance-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  background: #fff;
+  color: #071322;
+}
+
+.warehouse-balance-table th,
+.warehouse-balance-table td {
+  border: 1px solid #111827;
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.warehouse-balance-table th:first-child,
+.warehouse-balance-table td:first-child {
+  text-align: left;
+  min-width: 240px;
+  font-weight: 800;
+}
+
+.warehouse-balance-table th {
+  background: #f8fafc;
+  font-weight: 900;
+}
+
+.warehouse-input {
+  width: 74px;
+  height: 28px;
+  text-align: center;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #fff7ed;
+  font-weight: 700;
+}
+
+.warehouse-sum-row td:first-child {
+  background: #fde9a9;
+}
+
+.warehouse-sum-row td,
+.warehouse-total-row td {
+  font-weight: 900;
+}
+
+.warehouse-diff-row td:first-child,
+.warehouse-total-row td:first-child {
+  font-size: 1rem;
+}
+
+.warehouse-value.warehouse-ok {
+  background: #c6e0b4;
+  font-weight: 900;
+}
+
+.warehouse-value.warehouse-bad {
+  background: #fff2cc;
+  font-weight: 900;
+}
+
+.warehouse-small-table {
+  max-width: 980px;
+}
+
+
+/* CDA balance panel */
+.cda-balance-card {
+  border-top: 3px solid #1a3c5e;
+}
+
+.cda-balance-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.cda-balance-table-wrap {
+  overflow-x: auto;
+}
+
+.cda-balance-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.cda-envio-table {
+  min-width: 520px;
+}
+
+.cda-balance-table th,
+.cda-balance-table td {
+  border: 1px solid #111827;
+  padding: 7px 8px;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.cda-balance-table th:first-child,
+.cda-balance-table td:first-child {
+  text-align: left;
+  min-width: 170px;
+  font-weight: 900;
+}
+
+.cda-balance-table th {
+  background: #f8fafc;
+  color: #071322;
+  font-weight: 900;
+}
+
+.cda-balance-input {
+  width: 70px;
+  height: 28px;
+  text-align: center;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #fff7ed;
+  font-weight: 800;
+}
+
+.cda-balance-value {
+  font-weight: 800;
+}
+
+.cda-strong-row td {
+  font-weight: 900;
+}
+
+.cda-physical-row td {
+  background: #e2f0d9;
+}
+
+.cda-diff-row td:first-child {
+  font-size: 0.95rem;
+}
+
+.cda-ok {
+  background: #70ad47;
+  color: #071322;
+}
+
+.cda-bad {
+  background: #ffc7ce;
+  color: #9c0006;
+}
+
+.cda-envio-title td {
+  text-align: center !important;
+  font-size: 0.9rem;
+  background: #f8fafc;
+}
+
+@media (max-width: 1050px) {
+  .cda-balance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Bank report Excel style */
+#bancos-filtros-card,
+#bancos-filtros-card .card-body,
+#bancos-filtros-card .form-row,
+#bancos-filtros-card .fg {
+  overflow: visible !important;
+}
+
+#bancos-filtros-card {
+  position: relative;
+  z-index: 80;
+}
+
+#bancos-detalle-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+#bancos-detalle-card .card-body {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0 !important;
+}
+
+/* Comprobantes: keep the document type dropdown above the next card */
+#recibos-tipo-card,
+#recibos-tipo-card .card-body,
+#recibos-tipo-card .form-row,
+#recibos-tipo-card .fg {
+  overflow: visible !important;
+}
+
+#recibos-tipo-card {
+  position: relative;
+  z-index: 90;
+}
+
+#recibos-tipo-card .autocomplete-container {
+  position: relative;
+  z-index: 1000002;
+}
+
+#tab-recibos .card:not(#recibos-tipo-card) {
+  position: relative;
+  z-index: 1;
+}
+
+.bank-report-table {
+  min-width: 1660px;
+  width: max-content;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.72rem;
+  background: #fff;
+}
+
+.bank-report-table th,
+.bank-report-table td {
+  border: 0;
+  border-right: 1px solid #b7d7f0;
+  border-bottom: 1px solid #b7d7f0;
+  padding: 4px 7px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bank-report-table th {
+  color: #fff !important;
+  font-weight: 900;
+  background: #1a3c5e !important;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+.bank-report-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.bank-report-title-row th {
+  background: #1a3c5e !important;
+  color: #fff !important;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  padding: 8px;
+}
+
+.bank-report-table .bank-report-date-head,
+.bank-report-table .bank-report-agro-head {
+  background: #1a3c5e !important;
+  color: #fff !important;
+  border-right: 1px solid #b7d7f0 !important;
+  border-bottom: 1px solid #b7d7f0 !important;
+  vertical-align: middle;
+  text-align: center !important;
+  box-shadow: none;
+}
+
+.bank-report-date-head,
+.bank-report-date {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center !important;
+}
+
+.bank-report-date {
+  background: #f8fbff !important;
+  font-weight: 800;
+}
+
+.bank-report-agro-head,
+.bank-report-agro {
+  position: sticky;
+  left: 100px;
+  z-index: 5;
+  background: #fff;
+  min-width: 330px;
+  width: 330px;
+  max-width: 330px;
+}
+
+.bank-report-agro-head {
+  text-align: center !important;
+}
+
+.bank-report-agro {
+  text-align: left !important;
+  white-space: normal !important;
+  line-height: 1.1;
+  background: #f8fbff !important;
+}
+
+.bank-report-agro strong {
+  display: block;
+  color: #071322;
+}
+
+.bank-report-agro span {
+  display: block;
+  color: #516275;
+  font-size: 0.68rem;
+  margin-top: 2px;
+}
+
+.bank-report-number,
+.bank-report-money {
+  font-weight: 800;
+}
+
+.bank-col-arroz {
+  background: #1a3c5e !important;
+  color: #fff !important;
+}
+
+.bank-col-precocido {
+  background: #1a3c5e !important;
+  color: #fff !important;
+}
+
+.bank-col-frijol {
+  background: #1a3c5e !important;
+  color: #fff !important;
+}
+
+.bank-col-frijol4 {
+  background: #1a3c5e !important;
+  color: #fff !important;
+}
+
+.bank-col-aceite,
+.bank-col-harina {
+  background: #1a3c5e !important;
+  color: #fff !important;
+}
+
+.bank-report-efectivo-head {
+  background: #1a3c5e !important;
+  color: #fff !important;
+}
+
+.bank-report-table thead tr:nth-child(3) th,
+.bank-report-table thead tr:nth-child(2) th {
+  background: #f8fafc !important;
+  color: #1a3c5e !important;
+  font-family: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0;
+}
+
+.bank-report-table thead tr:nth-child(3) th.bank-col-arroz,
+.bank-report-table thead tr:nth-child(3) th.bank-col-precocido,
+.bank-report-table thead tr:nth-child(3) th.bank-col-frijol,
+.bank-report-table thead tr:nth-child(3) th.bank-col-frijol4,
+.bank-report-table thead tr:nth-child(3) th.bank-col-aceite,
+.bank-report-table thead tr:nth-child(3) th.bank-col-harina {
+  color: #1a3c5e !important;
+}
+
+.bank-report-table tbody tr:nth-child(odd) td {
+  background: #f8fbff;
+}
+
+.bank-report-table tbody tr:nth-child(even) td {
+  background: #edf6ff;
+}
+
+.bank-report-table tbody tr:nth-child(odd) .bank-report-date,
+.bank-report-table tbody tr:nth-child(odd) .bank-report-agro {
+  background: #f8fbff !important;
+}
+
+.bank-report-table tbody tr:nth-child(even) .bank-report-date,
+.bank-report-table tbody tr:nth-child(even) .bank-report-agro {
+  background: #edf6ff !important;
+}
+
+.bank-report-table td.bank-report-ventas,
+.bank-report-table td.bank-report-gastos,
+.bank-report-table td.bank-report-remesa,
+.bank-report-table td.bank-report-remesado-input {
+  color: #071322 !important;
+}
+
+.bank-report-gastos input,
+.bank-report-remesado-input input {
+  width: 72px;
+  height: 22px;
+  border: 1.5px solid #111827;
+  border-radius: 5px;
+  text-align: right;
+  padding: 2px 6px;
+  font-weight: 800;
+  background: #fff3ed;
+}
+
+.bank-report-remesado-input input {
+  border-color: #6aa84f;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.bank-report-bank {
+  width: 230px;
+  min-width: 230px;
+  height: 30px;
+  border: 1px solid #6aa84f;
+  background: #a9d18e;
+  color: #0f5132;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.bank-report-account {
+  display: block;
+  margin-top: 3px;
+  color: #0f5132;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.bank-report-bank-zero {
+  background: #ff5733;
+  border-color: #cc4125;
+  color: #111827;
+}
+
+.bank-report-remesado-ok {
+  background: #a9d18e !important;
+}
+
+.bank-report-remesado-zero {
+  background: #ff5733 !important;
+}
+
+.bank-report-total-row td {
+  font-weight: 900;
+  font-size: 0.88rem;
+  background: #fff !important;
+}
+
+.bank-report-total-row td:nth-last-child(-n+5) {
+  background: #ddebf7 !important;
+}
+
+.bank-report-empty {
+  padding: 22px !important;
+  color: #64748b;
+  font-style: italic;
+  text-align: center !important;
+}
+
+/* Devoluciones estilo hoja simple */
+#tbl-devoluciones {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  background: #fff;
+  color: #000;
+  font-size: 0.82rem;
+}
+
+#tbl-devoluciones th,
+#tbl-devoluciones td {
+  border: 1px solid #d9d9d9;
+  padding: 3px 8px;
+  height: 22px;
+  text-align: center;
+  background: #fff;
+  color: #000;
+  line-height: 1.1;
+}
+
+#tbl-devoluciones th {
+  font-weight: 800;
+}
+
+#tbl-devoluciones th:nth-child(1),
+#tbl-devoluciones td:nth-child(1) {
+  width: 120px;
+}
+
+#tbl-devoluciones th:nth-child(2),
+#tbl-devoluciones td:nth-child(2) {
+  min-width: 210px;
+}
+
+#tbl-devoluciones th:nth-child(3),
+#tbl-devoluciones td:nth-child(3) {
+  width: 160px;
+}
+
+#tbl-devoluciones th:nth-child(4),
+#tbl-devoluciones td:nth-child(4) {
+  width: 110px;
+}
+
+#tbl-devoluciones th:nth-child(5),
+#tbl-devoluciones td:nth-child(5) {
+  width: 180px;
+}
