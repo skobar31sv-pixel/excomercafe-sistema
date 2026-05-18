@@ -1825,7 +1825,7 @@
         <span style="font-size:0.72rem;color:var(--muted);">Se actualiza en tiempo real</span>
       </div>
       <div style="padding:0;overflow:auto;max-height:600px;">
-        <div id="recibo-preview" style="background:#fff;margin:0 auto;padding:32px 36px;font-family:Arial,sans-serif;font-size:13px;color:#111;min-height:500px;box-shadow:0 0 0 1px #e2e8f0 inset;"><div style="text-align:center;margin-bottom:18px;border-bottom:3px solid #1A3C5E;padding-bottom:14px;"><div style="font-size:1.3em;font-weight:bold;letter-spacing:2px;color:#1A3C5E;">EXCOMERCAFE S.A DE C.V</div><div style="font-size:0.75em;color:#666;margin-top:2px;">Sistema de Control de Agromercados</div><div style="font-size:1.1em;font-weight:bold;margin-top:8px;color:#E8A020;letter-spacing:1px;">💵 RECIBO DE PAGO</div></div><div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:0.85em;"><span><b>N°:</b> REC-2026-001</span><span><b>Fecha:</b> 08/05/2026</span></div><table style="width:100%;margin-bottom:16px;"><tbody><tr><td style="padding:5px 0;width:50%;"><b>Recibido de:</b><br>_______________________</td><td style="padding:5px 0;"><b>Recibido por:</b><br>_______________________</td></tr><tr><td style="padding:5px 0;"><b>Banco / Método:</b><br>_______________________<br><span style="font-size:0.8rem;color:#666;"></span></td><td style="padding:5px 0;"><b>Monto:</b><br><span style="font-size:1.4em;font-weight:bold;color:#16A34A;">$0.00</span></td></tr></tbody></table><div style="margin-bottom:12px;"><b>Concepto:</b><br><span style="color:#333;">_________________________________________________</span></div><div style="display:flex;justify-content:space-around;margin-top:40px;"><div style="text-align:center;width:180px;"><div style="border-top:1px solid #333;padding-top:6px;font-size:11px;">Elaborado por</div></div><div style="text-align:center;width:180px;"><div style="border-top:1px solid #333;padding-top:6px;font-size:11px;">Recibido / Firma</div></div></div><div style="text-align:center;margin-top:20px;font-size:0.7em;color:#aaa;border-top:1px solid #eee;padding-top:8px;">Documento generado por EXCOMERCAFE — Sistema de Agromercados</div></div>
+        <div id="recibo-preview" style="background:#fff;margin:0 auto;padding:32px 36px;font-family:Arial,sans-serif;font-size:13px;color:#111;min-height:500px;box-shadow:0 0 0 1px #e2e8f0 inset;"><div style="text-align:center;margin-bottom:18px;border-bottom:3px solid #1A3C5E;padding-bottom:14px;"><div style="font-size:1.3em;font-weight:bold;letter-spacing:2px;color:#1A3C5E;">EXCOMERCAFE S.A DE C.V</div><div style="font-size:0.75em;color:#666;margin-top:2px;">Sistema de Control de Agromercados</div><div style="font-size:1.1em;font-weight:bold;margin-top:8px;color:#E8A020;letter-spacing:1px;">💵 RECIBO DE PAGO</div></div><div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:0.85em;"><span><b>N°:</b> REC-2026-001</span><span><b>Fecha:</b> ____/____/____</span></div><table style="width:100%;margin-bottom:16px;"><tbody><tr><td style="padding:5px 0;width:50%;"><b>Recibido de:</b><br>_______________________</td><td style="padding:5px 0;"><b>Recibido por:</b><br>_______________________</td></tr><tr><td style="padding:5px 0;"><b>Banco / Método:</b><br>_______________________<br><span style="font-size:0.8rem;color:#666;"></span></td><td style="padding:5px 0;"><b>Monto:</b><br><span style="font-size:1.4em;font-weight:bold;color:#16A34A;">$0.00</span></td></tr></tbody></table><div style="margin-bottom:12px;"><b>Concepto:</b><br><span style="color:#333;">_________________________________________________</span></div><div style="display:flex;justify-content:space-around;margin-top:40px;"><div style="text-align:center;width:180px;"><div style="border-top:1px solid #333;padding-top:6px;font-size:11px;">Elaborado por</div></div><div style="text-align:center;width:180px;"><div style="border-top:1px solid #333;padding-top:6px;font-size:11px;">Recibido / Firma</div></div></div><div style="text-align:center;margin-top:20px;font-size:0.7em;color:#aaa;border-top:1px solid #eee;padding-top:8px;">Documento generado por EXCOMERCAFE — Sistema de Agromercados</div></div>
       </div>
     </div>
   </div>
@@ -8047,11 +8047,37 @@ function sembrarDatosIniciales(){
 
 // Helper: aplicar fecha actual a campos date
 window.aplicarFechaActualATodosLosCampos = function(){
-  var hoy = typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10);
+  var hoy = typeof window.obtenerFechaHoyISO === 'function'
+    ? window.obtenerFechaHoyISO()
+    : (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
 
   document.querySelectorAll('input[type="date"]').forEach(function(input){
     if (!input.value) input.value = hoy;
   });
+
+  [
+    'agro-fecha',
+    'new-desc-fecha',
+    'descargas-fecha',
+    'distribucion-fecha',
+    'inventario-fecha',
+    'devolucion-fecha',
+    'recibo-fecha',
+    'cuadre-bodega-fecha',
+    'cuadre-cda-fecha',
+    'reporte-resumen-desde',
+    'reporte-resumen-hasta'
+  ].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el && !el.value) el.value = hoy;
+  });
+
+  var texto = typeof window.obtenerFechaHoyTexto === 'function' ? window.obtenerFechaHoyTexto() : '';
+  var elFecha = document.getElementById('fecha-actual') ||
+    document.getElementById('fecha-hoy') ||
+    document.getElementById('current-date') ||
+    document.getElementById('dia-actual');
+  if (elFecha && texto) elFecha.textContent = texto;
 };
 
 // ── INIT ──
