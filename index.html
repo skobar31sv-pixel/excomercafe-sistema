@@ -2,7 +2,8 @@
 <html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EXCOMERCAFE — Reporte Agromercados</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231a3c5e'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='34' font-family='Arial' fill='%23fff'%3EE%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="./favicon.ico">
+<link rel="apple-touch-icon" href="./favicon.png">
 <link href="./index_files/css2" rel="stylesheet">
 <link href="./css/styles.css" rel="stylesheet">
 <link href="./css/components.css" rel="stylesheet">
@@ -33,6 +34,122 @@
   .online-indicator.online::before{background:#22c55e;}
   .online-indicator.offline::before{background:#ef4444;}
   .online-indicator.syncing::before{background:#3b82f6;}
+  .hbtn-chat{
+    background:#0f766e;
+  }
+  .hbtn-chat span{
+    display:inline-flex;
+    min-width:18px;
+    height:18px;
+    align-items:center;
+    justify-content:center;
+    margin-left:5px;
+    border-radius:999px;
+    background:#dcfce7;
+    color:#14532d;
+    font-size:.72rem;
+    font-weight:900;
+  }
+  .chat-panel{
+    position:fixed;
+    right:14px;
+    top:78px;
+    width:min(340px, calc(100vw - 28px));
+    background:var(--card-bg,#fff);
+    color:var(--text-primary,#111827);
+    border:1px solid var(--border-color,#b9d7f0);
+    box-shadow:0 16px 40px rgba(15,23,42,.22);
+    border-radius:10px;
+    z-index:2200;
+    display:none;
+    overflow:hidden;
+  }
+  .chat-panel.open{display:block;}
+  .chat-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 12px;
+    background:var(--brand,#1a3c5e);
+    color:#fff;
+  }
+  .chat-head button{
+    border:0;
+    background:rgba(255,255,255,.18);
+    color:#fff;
+    border-radius:5px;
+    padding:3px 8px;
+    cursor:pointer;
+  }
+  .chat-user-row,.chat-send{
+    display:flex;
+    gap:6px;
+    padding:8px;
+    border-bottom:1px solid var(--border-color,#d6e7f7);
+  }
+  .chat-send{border-top:1px solid var(--border-color,#d6e7f7);border-bottom:0;}
+  .chat-user-row input,.chat-send input{
+    flex:1;
+    min-width:0;
+    border:1px solid var(--border-color,#b9d7f0);
+    border-radius:6px;
+    padding:7px 8px;
+    background:#fff;
+    color:#111827;
+  }
+  .chat-user-row button,.chat-send button{
+    border:0;
+    border-radius:6px;
+    padding:7px 9px;
+    background:var(--brand,#1a3c5e);
+    color:#fff;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .chat-presence{
+    padding:7px 10px;
+    font-size:.78rem;
+    color:var(--text-secondary,#374151);
+    background:var(--bg-secondary,#f4fbff);
+  }
+  .chat-messages{
+    max-height:260px;
+    overflow:auto;
+    padding:8px;
+    background:var(--surface2,#f4fbff);
+  }
+  .chat-msg{
+    margin-bottom:7px;
+    padding:7px 8px;
+    border-radius:8px;
+    background:#fff;
+    border:1px solid var(--border-color,#d6e7f7);
+  }
+  .chat-msg strong{display:block;font-size:.78rem;color:var(--brand,#1a3c5e);}
+  .chat-msg span{display:block;white-space:pre-wrap;font-size:.82rem;color:#111827;}
+  .chat-msg small{display:block;margin-top:3px;color:#64748b;font-size:.68rem;}
+  body.theme-verde{
+    --bg-primary:#ecfdf5;
+    --bg-secondary:#f0fdfa;
+    --card-bg:#ffffff;
+    --text-primary:#052e16;
+    --text-secondary:#14532d;
+    --text-muted:#166534;
+    --border-color:#86efac;
+    --card-border:#bbf7d0;
+    --button-bg:#166534;
+    --button-hover:#14532d;
+    --accent-color:#0f766e;
+    --brand:#166534;
+    --brand2:#0f766e;
+    --surface:#ecfdf5;
+    --surface2:#f0fdfa;
+    --border:#86efac;
+    --border2:#bbf7d0;
+    --muted:#166534;
+    --ink:#052e16;
+    --accent:#0f766e;
+  }
   .report-summary-toolbar{
     display:flex;
     align-items:end;
@@ -196,10 +313,27 @@
   </div>
   <div class="header-actions">
     <span id="online-indicator" class="online-indicator syncing" title="Estado de conexion">Sincronizando...</span>
-    <button class="hbtn hbtn-print" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="hbtn hbtn-chat" onclick="toggleChatPanel()" title="Usuarios conectados y chat">Chat <span id="online-users-count">0</span></button>
     <button class="hbtn hbtn-settings" onclick="openSettings()">⚙️ Ajustes</button>
   </div>
 </header>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-head">
+    <strong>Chat en linea</strong>
+    <button type="button" onclick="toggleChatPanel()">X</button>
+  </div>
+  <div class="chat-user-row">
+    <input type="text" id="chat-username" placeholder="Tu nombre" maxlength="40">
+    <button type="button" onclick="guardarChatUsuario()">Usar</button>
+  </div>
+  <div class="chat-presence" id="chat-presence">Conectados: 0</div>
+  <div class="chat-messages" id="chat-messages">Cargando chat...</div>
+  <div class="chat-send">
+    <input type="text" id="chat-message-input" placeholder="Escribe un mensaje..." maxlength="300" onkeydown="if(event.key==='Enter') enviarChatMensaje()">
+    <button type="button" onclick="enviarChatMensaje()">Enviar</button>
+  </div>
+</div>
 
 <!-- ══ TABS ══ -->
 <nav class="tabs" style="gap:4px;">
@@ -1041,9 +1175,10 @@
             <th>Producto</th>
             <th>Cantidad</th>
             <th>Entregado por</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="tbody-devoluciones"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No hay devoluciones registradas.</td></tr></tbody>
+        <tbody id="tbody-devoluciones"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No hay devoluciones registradas.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1654,16 +1789,6 @@
       </div>
 
       <div class="sp-section">
-        <div class="sp-label">Accesos Rapidos</div>
-        <div class="sp-btn-row">
-          <button class="sp-btn" onclick="irDesdeAjustes('tab-datos')">Datos y Ubicacion</button>
-          <button class="sp-btn" onclick="irDesdeAjustes('tab-inventario')">Inventario</button>
-          <button class="sp-btn" onclick="irDesdeAjustes('tab-bancos')">Reporte Banco</button>
-          <button class="sp-btn" onclick="irDesdeAjustes('tab-devoluciones')">Devoluciones</button>
-        </div>
-      </div>
-
-      <div class="sp-section">
         <div class="sp-label">Resumen Guardado</div>
         <div id="settings-data-summary" style="font-size:0.76rem;color:var(--text-primary);line-height:1.7;">Calculando datos...</div>
       </div>
@@ -1678,24 +1803,17 @@
       </div>
 
       <div class="sp-section">
-        <div class="sp-label">Tamano de Letra</div>
-        <div class="font-row">
-          <span style="font-size:0.7rem;">A</span>
-          <input type="range" class="font-slider" id="font-slider" min="11" max="18" value="14" oninput="cambiarFuente(this.value)">
-          <span style="font-size:1.1rem;">A</span>
-          <span class="font-label" id="font-label">14px</span>
+        <div class="sp-label">Tema Visual</div>
+        <div class="sp-btn-row">
+          <button class="sp-btn" onclick="aplicarTemaVisual('claro')">Claro</button>
+          <button class="sp-btn" onclick="aplicarTemaVisual('verde')">Verde</button>
         </div>
+        <div class="sp-sub" style="margin-top:8px;">Cambia solo los colores principales sin afectar la lectura de letras y numeros.</div>
       </div>
 
       <div class="sp-section">
         <div class="sp-label">Logo</div>
         <button class="sp-btn w-full" onclick="document.getElementById('logo-input').click()">Cambiar Logo</button>
-      </div>
-
-      <div class="sp-section">
-        <div class="sp-label">Limpieza de Datos</div>
-        <button class="sp-btn w-full sp-btn-danger" onclick="limpiarCache()">Restablecer Datos Locales</button>
-        <div class="sp-sub" style="margin-top:8px;">Usa esta opcion solo si ya tienes respaldo. Elimina los datos guardados del navegador.</div>
       </div>
 
       <div class="sp-section">
@@ -1745,6 +1863,20 @@ window.supabaseRequest = async function(table, options){
   return data;
 };
 
+window.eliminarSupabasePorLocalId = async function(table, localIdValue){
+  if (!window.supabaseRequest || !table || !localIdValue) return false;
+  try {
+    await window.supabaseRequest('/rest/v1/' + table + '?local_id=eq.' + encodeURIComponent(localIdValue), {
+      method: 'DELETE',
+      prefer: 'return=minimal'
+    });
+    return true;
+  } catch(error) {
+    console.warn('No se pudo borrar en Supabase:', table, localIdValue, error);
+    return false;
+  }
+};
+
 window.probarSupabase = async function(){
   var status = document.getElementById('supabase-status');
   if (status) status.textContent = 'Probando conexion...';
@@ -1760,6 +1892,118 @@ window.probarSupabase = async function(){
     alert(msg);
   }
 };
+
+window.chatClientId = localStorage.getItem('chat_client_id') || ('client-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+localStorage.setItem('chat_client_id', window.chatClientId);
+
+function chatName(){
+  return (localStorage.getItem('chat_username') || '').trim() || 'Usuario';
+}
+
+function chatEscape(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+window.toggleChatPanel = function(){
+  var panel = document.getElementById('chat-panel');
+  if(!panel) return;
+  panel.classList.toggle('open');
+  var input = document.getElementById('chat-username');
+  if(input) input.value = chatName() === 'Usuario' ? '' : chatName();
+  if(panel.classList.contains('open')) cargarChatOnline();
+};
+
+window.guardarChatUsuario = function(){
+  var input = document.getElementById('chat-username');
+  var nombre = (input && input.value || '').trim();
+  if(!nombre) nombre = 'Usuario';
+  localStorage.setItem('chat_username', nombre);
+  registrarPresenciaOnline();
+  if(typeof showToast === 'function') showToast('Usuario de chat: ' + nombre);
+};
+
+async function registrarPresenciaOnline(){
+  if(!window.supabaseRequest) return;
+  try{
+    await window.supabaseRequest('presence_online?on_conflict=client_id', {
+      method:'POST',
+      prefer:'resolution=merge-duplicates,return=minimal',
+      body:[{
+        client_id: window.chatClientId,
+        nombre: chatName(),
+        pagina: location.pathname || 'index',
+        ultimo_visto: new Date().toISOString()
+      }]
+    });
+  }catch(e){
+    console.warn('Presencia pendiente:', e.message);
+  }
+}
+
+async function cargarChatOnline(){
+  if(!window.supabaseRequest) return;
+  try{
+    await registrarPresenciaOnline();
+    var desde = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    var usuarios = await window.supabaseRequest('/rest/v1/presence_online?select=nombre,ultimo_visto&ultimo_visto=gte.' + encodeURIComponent(desde));
+    var count = (usuarios || []).length;
+    var countEl = document.getElementById('online-users-count');
+    var presenceEl = document.getElementById('chat-presence');
+    if(countEl) countEl.textContent = count;
+    if(presenceEl) presenceEl.textContent = 'Conectados: ' + count + ((usuarios || []).length ? ' - ' + usuarios.map(function(u){ return u.nombre; }).join(', ') : '');
+
+    var mensajes = await window.supabaseRequest('/rest/v1/chat_messages?select=nombre,mensaje,creado_en&order=creado_en.desc&limit=40');
+    mensajes = (mensajes || []).reverse();
+    renderChatMensajes(mensajes);
+  }catch(e){
+    var msg = document.getElementById('chat-messages');
+    if(msg) msg.textContent = 'Chat pendiente. Ejecuta las tablas de chat en Supabase.';
+    console.warn('Chat pendiente:', e.message);
+  }
+}
+
+function renderChatMensajes(mensajes){
+  var box = document.getElementById('chat-messages');
+  if(!box) return;
+  if(!mensajes.length){
+    box.innerHTML = '<div class="chat-msg"><span>Sin mensajes todavia.</span></div>';
+    return;
+  }
+  box.innerHTML = mensajes.map(function(m){
+    return '<div class="chat-msg"><strong>' + chatEscape(String(m.nombre || 'Usuario')) + '</strong><span>' + chatEscape(String(m.mensaje || '')) + '</span><small>' + new Date(m.creado_en || Date.now()).toLocaleString() + '</small></div>';
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+window.enviarChatMensaje = async function(){
+  var input = document.getElementById('chat-message-input');
+  var mensaje = (input && input.value || '').trim();
+  if(!mensaje) return;
+  try{
+    await window.supabaseRequest('chat_messages', {
+      method:'POST',
+      prefer:'return=minimal',
+      body:[{ client_id: window.chatClientId, nombre: chatName(), mensaje: mensaje }]
+    });
+    input.value = '';
+    cargarChatOnline();
+  }catch(e){
+    if(typeof showToast === 'function') showToast('No se pudo enviar chat. Revisa tablas Supabase.');
+  }
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  var input = document.getElementById('chat-username');
+  if(input) input.value = chatName() === 'Usuario' ? '' : chatName();
+  registrarPresenciaOnline();
+  cargarChatOnline();
+  setInterval(function(){
+    registrarPresenciaOnline();
+    cargarChatOnline();
+  }, 30000);
+});
 </script>
 <script>
 (function(){
@@ -3008,6 +3252,54 @@ window.editarRegistro = function(index){
   });
 };
 
+function movimientoIdDesdeVenta(registro){
+  var id = String(registro && registro.id || '');
+  if(id.indexOf('digitar-') === 0) return id.replace('digitar-', 'salida-digitar-');
+  return '';
+}
+
+function productoSalidaVenta(registro, key){
+  var ventas = (registro.ventas_unidades || {})[key] || 0;
+  var faltantes = (registro.faltantes_unidades || {})[key] || 0;
+  var danadas = (registro.danadas_unidades || {})[key] || 0;
+  return Number(ventas || 0) + Number(faltantes || 0) + Number(danadas || 0);
+}
+
+function revertirInventarioPorVenta(registro){
+  try{
+    var inventario = JSON.parse(localStorage.getItem('inventario-data') || '[]');
+    var movId = movimientoIdDesdeVenta(registro);
+    var antes = inventario.length;
+    if(movId){
+      inventario = inventario.filter(function(item){ return String(item.id) !== movId; });
+    }
+    if(inventario.length === antes){
+      var reversa = {
+        id: 'reversa-' + (registro.id || Date.now()),
+        fecha: registro.fecha || new Date().toISOString().slice(0,10),
+        ubicacion: 'agromercados',
+        lugar: registro.agromercado || registro.nombre || '',
+        tipo: 'reversa-venta',
+        referencia: 'Reversa por borrar historial de venta',
+        arroz: productoSalidaVenta(registro, 'ab1'),
+        precocido: productoSalidaVenta(registro, 'ap1'),
+        frijol1: productoSalidaVenta(registro, 'fr1'),
+        frijol4: productoSalidaVenta(registro, 'fr4'),
+        aceite: productoSalidaVenta(registro, 'ac'),
+        harina: productoSalidaVenta(registro, 'ha'),
+        observaciones: 'Inventario devuelto al eliminar historial de venta',
+        timestamp: new Date().toISOString()
+      };
+      reversa.total = reversa.arroz + reversa.precocido + reversa.frijol1 + reversa.frijol4 + reversa.aceite + reversa.harina;
+      inventario.unshift(reversa);
+    }
+    localStorage.setItem('inventario-data', JSON.stringify(inventario));
+    if(typeof inventarioData !== 'undefined') inventarioData = inventario;
+  } catch(e){
+    console.error('Error revirtiendo inventario:', e);
+  }
+}
+
 window.eliminarRegistro = function(index){
   if(!confirm('¿Seguro que deseas eliminar este registro?')) return;
   
@@ -3015,24 +3307,10 @@ window.eliminarRegistro = function(index){
   if(index < 0 || index >= hist.length) return;
   
   var registroEliminado = hist[index];
+  revertirInventarioPorVenta(registroEliminado);
   hist.splice(index, 1);
   localStorage.setItem('exc_agro_hist', JSON.stringify(hist));
-  
-  // Actualizar inventario (devolver productos)
-  if(registroEliminado.ventas_unidades){
-    try{
-      var inventario = JSON.parse(localStorage.getItem('inventario-data')||'[]');
-      Object.keys(registroEliminado.ventas_unidades).forEach(function(producto){
-        var item = inventario.find(function(i){ return i.producto === producto; });
-        if(item){
-          item.cantidad += registroEliminado.ventas_unidades[producto];
-        }
-      });
-      localStorage.setItem('inventario-data', JSON.stringify(inventario));
-    } catch(e){
-      console.error('Error actualizando inventario:', e);
-    }
-  }
+  eliminarSupabasePorLocalId('ventas_agromercado', registroEliminado.id);
   
   refrescarInventarioEnTiempoReal();
   renderHistorial();
@@ -3043,7 +3321,10 @@ window.eliminarRegistro = function(index){
 
 window.limpiarHistorial = function(){
   if(!confirm('¿Eliminar todo el historial? Esta acción no se puede deshacer.')) return;
+  var hist = JSON.parse(localStorage.getItem('exc_agro_hist')||'[]');
+  hist.forEach(function(registro){ revertirInventarioPorVenta(registro); });
   localStorage.removeItem('exc_agro_hist');
+  if(typeof refrescarInventarioEnTiempoReal === 'function') refrescarInventarioEnTiempoReal();
   renderHistorial();
   renderBancos();
   showToast('🗑️ Historial eliminado');
@@ -3622,11 +3903,16 @@ window.cargarImport = function(input){
   reader.readAsText(file);
 };
 
-// Fuente
-window.cambiarFuente = function(val){
-  document.documentElement.style.setProperty('--font-size', val+'px');
-  document.getElementById('font-label').textContent = val+'px';
-  localStorage.setItem('exc_fuente', val);
+window.aplicarTemaVisual = function(nombre, silent){
+  nombre = nombre || 'claro';
+  if (nombre !== 'verde') nombre = 'claro';
+  document.body.classList.remove('theme-verde');
+  document.body.removeAttribute('data-theme');
+  if(nombre !== 'claro') document.body.classList.add('theme-' + nombre);
+  localStorage.setItem('exc_tema_visual', nombre);
+  localStorage.removeItem('theme');
+  document.body.setAttribute('data-theme', 'light');
+  if(!silent && typeof showToast === 'function') showToast('Tema aplicado: ' + nombre);
 };
 
 // Tema
@@ -3642,8 +3928,11 @@ window.cambiarTema = function(brand, brand2, accent){
 };
 
 function aplicarAjustes(){
-  var fuente = localStorage.getItem('exc_fuente');
-  if(fuente){ document.documentElement.style.setProperty('--font-size',fuente+'px'); document.getElementById('font-slider').value=fuente; document.getElementById('font-label').textContent=fuente+'px'; }
+  localStorage.removeItem('exc_fuente');
+  document.documentElement.style.removeProperty('--font-size');
+  document.body.style.fontSize = '';
+  var temaGuardado = localStorage.getItem('exc_tema_visual');
+  aplicarTemaVisual(temaGuardado === 'verde' ? 'verde' : 'claro', true);
   var temaRaw = localStorage.getItem('exc_tema');
   if(temaRaw){ try{ var t=JSON.parse(temaRaw); cambiarTema(t.brand,t.brand2,t.accent); }catch(e){} }
   var logo = localStorage.getItem('exc_logo');
@@ -3703,6 +3992,7 @@ window.limpiarCache = function(){
 // ── DEVOLUCIONES FUNCTIONS ──
 var devolucionesData = [];
 var devolucionesFormIdCounter = 1;
+var devolucionEditandoId = null;
 
 window.guardarDevolucion = function(){
   var fecha = document.getElementById('devolucion-fecha').value;
@@ -3733,7 +4023,7 @@ window.guardarDevolucion = function(){
   }
   
   var devolucion = {
-    id: 'dev-' + devolucionesFormIdCounter++,
+    id: devolucionEditandoId || ('dev-' + devolucionesFormIdCounter++),
     fecha: fecha,
     agromercado: agromercado,
     producto: producto,
@@ -3742,7 +4032,14 @@ window.guardarDevolucion = function(){
     timestamp: new Date().toISOString()
   };
   
-  devolucionesData.push(devolucion);
+  if (devolucionEditandoId) {
+    devolucionesData = devolucionesData.map(function(item){
+      return item.id === devolucionEditandoId ? devolucion : item;
+    });
+    devolucionEditandoId = null;
+  } else {
+    devolucionesData.push(devolucion);
+  }
   localStorage.setItem('devoluciones-data', JSON.stringify(devolucionesData));
   
   renderDevolucionesTable();
@@ -3753,6 +4050,7 @@ window.guardarDevolucion = function(){
 };
 
 window.limpiarFormularioDevoluciones = function(){
+  devolucionEditandoId = null;
   document.getElementById('devolucion-fecha').value = '';
   document.getElementById('devolucion-agromercado').value = '';
   document.getElementById('devolucion-producto').value = '';
@@ -4054,6 +4352,7 @@ var distribucionIdCounter = 1;
 // ── FUNCIONES PARA CONTROL DE INVENTARIO ──
 var inventarioData = [];
 var inventarioIdCounter = 1;
+var inventarioEditandoId = null;
 
 window.obtenerDestinosInventarioPorTipo = function(){
   var grupos = { TIENDONA: [], CDA: [] };
@@ -4285,7 +4584,7 @@ window.guardarInventario = function(){
   }
   
   var inventario = {
-    id: 'inv-' + inventarioIdCounter++,
+    id: inventarioEditandoId || ('inv-' + inventarioIdCounter++),
     fecha: fecha,
     destino: destino,
     ubicacion: ubicacion,
@@ -4301,7 +4600,14 @@ window.guardarInventario = function(){
     timestamp: new Date().toISOString()
   };
   
-  inventarioData.unshift(inventario);
+  if (inventarioEditandoId) {
+    inventarioData = inventarioData.map(function(item){
+      return item.id === inventarioEditandoId ? inventario : item;
+    });
+    inventarioEditandoId = null;
+  } else {
+    inventarioData.unshift(inventario);
+  }
   localStorage.setItem('inventario-data', JSON.stringify(inventarioData));
 
   console.log(
@@ -4330,6 +4636,7 @@ window.guardarInventario = function(){
 };
 
 window.limpiarFormularioInventario = function(){
+  inventarioEditandoId = null;
   document.getElementById('inventario-fecha').value = '';
   var destEl = document.getElementById('inventario-destino'); if(destEl) destEl.value = '';
   document.getElementById('inventario-ubicacion').value = '';
@@ -4515,11 +4822,42 @@ window.filtrarInventario = function(){
   renderInventarioTableFiltrado(datosFiltrados);
 };
 
+window.editarInventario = function(id){
+  var inv = inventarioData.find(function(item){ return item && item.id === id; });
+  if (!inv) {
+    showAlert('alert-inventario', 'No se encontro el registro para editar', 'err');
+    return;
+  }
+  inventarioEditandoId = id;
+  var fecha = document.getElementById('inventario-fecha');
+  var destino = document.getElementById('inventario-destino');
+  var ubicacion = document.getElementById('inventario-ubicacion');
+  if (fecha) fecha.value = inv.fecha || '';
+  if (destino) {
+    if (typeof cargarDestinosInventario === 'function') cargarDestinosInventario();
+    destino.value = inv.destino || inv.lugarEspecifico || inv.lugar || '';
+    if (typeof actualizarUbicacionesPorDestinoInventario === 'function') actualizarUbicacionesPorDestinoInventario();
+  }
+  if (ubicacion) ubicacion.value = inv.ubicacion || '';
+  var otros = document.getElementById('inventario-otros');
+  if (otros) otros.value = inv.lugarEspecifico || inv.lugar || '';
+  document.getElementById('inventario-arroz').value = parseInt(inv.arroz) || 0;
+  document.getElementById('inventario-precocido').value = parseInt(inv.precocido) || 0;
+  document.getElementById('inventario-frijol1').value = parseInt(inv.frijol1) || 0;
+  document.getElementById('inventario-frijol4').value = parseInt(inv.frijol4) || 0;
+  document.getElementById('inventario-aceite').value = parseInt(inv.aceite) || 0;
+  document.getElementById('inventario-harina').value = parseInt(inv.harina) || 0;
+  document.getElementById('inventario-observaciones').value = inv.observaciones || '';
+  showAlert('alert-inventario', 'Editando registro de inventario. Guarda para aplicar cambios.', 'ok');
+  document.getElementById('inventario-fecha')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
 window.eliminarInventario = function(id){
   if(!confirm('¿Eliminar este registro de inventario? Esta acción no se puede deshacer.')) return;
   
   inventarioData = inventarioData.filter(function(i){ return i.id !== id; });
   localStorage.setItem('inventario-data', JSON.stringify(inventarioData));
+  eliminarSupabasePorLocalId('inventario_movimientos', id);
   refrescarInventarioEnTiempoReal();
   showAlert('alert-inventario', '🗑️ Registro eliminado', 'ok');
 };
@@ -4529,7 +4867,7 @@ window.limpiarHistorialInventario = function(){
   
   inventarioData = [];
   localStorage.removeItem('inventario-data');
-  renderInventarioTable();
+  refrescarInventarioEnTiempoReal();
   showAlert('alert-inventario', '🗑️ Historial eliminado', 'ok');
 };
 
@@ -5276,6 +5614,8 @@ window.guardarDistribucion = function(){
     showAlert('distribucion', 'Error al registrar movimientos de inventario: ' + error.message, 'err');
     return;
   }
+  distribucion.movimientoSalidaId = movimientoSalida.id;
+  distribucion.movimientoEntradaId = movimientoEntrada.id;
   
   distribucionData.push(distribucion);
   localStorage.setItem('distribucion-cda-data', JSON.stringify(distribucionData));
@@ -5328,10 +5668,87 @@ window.renderDistribucionTable = function(){
       + '<td><strong>' + dist.total + '</strong></td>'
       + '<td>' + (dist.observaciones || '') + '</td>'
       + '<td style="text-align:center;">'
+        + '<button class="btn btn-sm btn-primary" onclick="editarDistribucion(\'' + dist.id + '\')" style="padding:2px 6px;font-size:0.7rem;margin-right:4px;">Editar</button>'
         + '<button class="btn btn-sm btn-danger" onclick="eliminarDistribucion(\'' + dist.id + '\')" style="padding:2px 6px;font-size:0.7rem;">🗑️</button>'
       + '</td>'
       + '</tr>';
   }).join('');
+};
+
+function revertirDistribucionCDA(dist){
+  if (!dist) return;
+  var inv = [];
+  try { inv = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(e) { inv = []; }
+  var ids = [dist.movimientoSalidaId, dist.movimientoEntradaId].filter(Boolean);
+  var removidos = 0;
+  if (ids.length) {
+    inv = inv.filter(function(mov){
+      var quitar = ids.indexOf(mov && mov.id) >= 0;
+      if (quitar) removidos++;
+      return !quitar;
+    });
+  }
+  if (!removidos) {
+    var lugarCompleto = [dist.distrito, dist.municipio, dist.cda].filter(Boolean).join(', ');
+    var ts = Date.now();
+    inv.unshift({
+      id: 'reversa-distribucion-bodega-' + ts,
+      fecha: dist.fecha || new Date().toISOString().split('T')[0],
+      ubicacion: 'bodega-local',
+      lugar: 'Bodega Principal',
+      tipo: 'reversa-distribucion',
+      referencia: 'Reversa por borrado de distribucion CDA',
+      arroz: parseInt(dist.arroz) || 0,
+      precocido: parseInt(dist.precocido) || 0,
+      frijol1: parseInt(dist.frijol1) || 0,
+      frijol4: parseInt(dist.frijol4) || 0,
+      aceite: parseInt(dist.aceite) || 0,
+      harina: parseInt(dist.harina) || 0
+    });
+    inv.unshift({
+      id: 'reversa-distribucion-agro-' + ts,
+      fecha: dist.fecha || new Date().toISOString().split('T')[0],
+      ubicacion: 'agromercados',
+      lugar: lugarCompleto,
+      tipo: 'reversa-distribucion',
+      referencia: 'Reversa por borrado de distribucion CDA',
+      arroz: -(parseInt(dist.arroz) || 0),
+      precocido: -(parseInt(dist.precocido) || 0),
+      frijol1: -(parseInt(dist.frijol1) || 0),
+      frijol4: -(parseInt(dist.frijol4) || 0),
+      aceite: -(parseInt(dist.aceite) || 0),
+      harina: -(parseInt(dist.harina) || 0)
+    });
+  }
+  localStorage.setItem('inventario-data', JSON.stringify(inv));
+  if (typeof inventarioData !== 'undefined') inventarioData = inv;
+}
+
+window.editarDistribucion = function(id){
+  var dist = distribucionData.find(function(d){ return d && d.id === id; });
+  if (!dist) {
+    showAlert('distribucion', 'No se encontro el registro para editar', 'err');
+    return;
+  }
+  revertirDistribucionCDA(dist);
+  distribucionData = distribucionData.filter(function(d){ return d.id !== id; });
+  localStorage.setItem('distribucion-cda-data', JSON.stringify(distribucionData));
+  document.getElementById('distribucion-fecha').value = dist.fecha || '';
+  document.getElementById('distribucion-distrito').value = dist.distrito || '';
+  actualizarMunicipiosDistribucion();
+  document.getElementById('distribucion-municipio').value = dist.municipio || '';
+  actualizarCDAsDistribucion();
+  document.getElementById('distribucion-cda').value = dist.cda || '';
+  document.getElementById('distribucion-arroz').value = parseInt(dist.arroz) || 0;
+  document.getElementById('distribucion-precocido').value = parseInt(dist.precocido) || 0;
+  document.getElementById('distribucion-frijol1').value = parseInt(dist.frijol1) || 0;
+  document.getElementById('distribucion-frijol4').value = parseInt(dist.frijol4) || 0;
+  document.getElementById('distribucion-aceite').value = parseInt(dist.aceite) || 0;
+  document.getElementById('distribucion-harina').value = parseInt(dist.harina) || 0;
+  document.getElementById('distribucion-observaciones').value = dist.observaciones || '';
+  renderDistribucionTable();
+  refrescarInventarioEnTiempoReal();
+  showAlert('distribucion', 'Editando distribucion. Guarda para aplicar los cambios.', 'ok');
 };
 
 window.eliminarDistribucion = function(id){
@@ -5343,12 +5760,25 @@ window.eliminarDistribucion = function(id){
   showAlert('distribucion', '🗑️ Registro eliminado', 'ok');
 };
 
+window.eliminarDistribucion = function(id){
+  if(!confirm('Eliminar este registro de distribucion CDA? Esta accion no se puede deshacer.')) return;
+  var registro = distribucionData.find(function(d){ return d && d.id === id; });
+  revertirDistribucionCDA(registro);
+  distribucionData = distribucionData.filter(function(d){ return d.id !== id; });
+  localStorage.setItem('distribucion-cda-data', JSON.stringify(distribucionData));
+  eliminarSupabasePorLocalId('distribucion_cda', id);
+  refrescarInventarioEnTiempoReal();
+  showAlert('distribucion', 'Registro eliminado e inventario restablecido', 'ok');
+};
+
 window.limpiarHistorialDistribucion = function(){
   if(!confirm('¿Eliminar todo el historial de distribución CDA? Esta acción no se puede deshacer.')) return;
   
+  distribucionData.forEach(function(registro){ revertirDistribucionCDA(registro); });
   distribucionData = [];
   localStorage.removeItem('distribucion-cda-data');
   renderDistribucionTable();
+  refrescarInventarioEnTiempoReal();
   showAlert('distribucion', '🗑️ Historial eliminado', 'ok');
 };
 
@@ -7005,7 +7435,7 @@ window.renderDevolucionesTable = function(){
   if(!tbody) return;
   var rows = normalizarDevolucionesParaTabla(devolucionesData);
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No hay devoluciones registradas.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No hay devoluciones registradas.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(function(dev){
@@ -7015,11 +7445,46 @@ window.renderDevolucionesTable = function(){
       + '<td>' + escapeHtml(dev.producto || '') + '</td>'
       + '<td>' + (parseInt(dev.cantidad) || 0) + '</td>'
       + '<td>' + escapeHtml(dev.entregado || '') + '</td>'
+      + '<td style="text-align:center;">'
+        + '<button class="btn btn-sm btn-primary" onclick="editarInventario(\'' + inv.id + '\')" style="padding:2px 6px;font-size:0.7rem;margin-right:4px;">Editar</button>'
+        + '<button class="btn btn-sm btn-primary" onclick="editarDevolucion(\'' + dev.id + '\')" style="padding:2px 6px;font-size:0.7rem;margin-right:4px;">Editar</button>'
+        + '<button class="btn btn-sm btn-danger" onclick="eliminarDevolucion(\'' + dev.id + '\')" style="padding:2px 6px;font-size:0.7rem;">Borrar</button>'
+      + '</td>'
       + '</tr>';
   }).join('');
 };
 
 window.renderDevoluciones = window.renderDevolucionesTable;
+
+window.editarDevolucion = function(id){
+  var dev = devolucionesData.find(function(item){ return item && item.id === id; });
+  if (!dev) {
+    showToast('No se puede editar este registro importado. Vuelve a ingresarlo manualmente si necesitas cambiarlo.');
+    return;
+  }
+  devolucionEditandoId = id;
+  document.getElementById('devolucion-fecha').value = dev.fecha || '';
+  document.getElementById('devolucion-agromercado').value = dev.agromercado || '';
+  document.getElementById('devolucion-producto').value = dev.producto || '';
+  document.getElementById('devolucion-cantidad').value = parseInt(dev.cantidad) || 0;
+  document.getElementById('devolucion-entregado').value = dev.entregado || '';
+  showToast('Editando devolucion. Guarda para aplicar los cambios.');
+  document.getElementById('devolucion-fecha')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+window.eliminarDevolucion = function(id){
+  if(!confirm('Eliminar esta devolucion?')) return;
+  var antes = devolucionesData.length;
+  devolucionesData = devolucionesData.filter(function(item){ return item && item.id !== id; });
+  if (devolucionesData.length === antes) {
+    showToast('No se pudo borrar este registro importado.');
+    return;
+  }
+  localStorage.setItem('devoluciones-data', JSON.stringify(devolucionesData));
+  renderDevolucionesTable();
+  refrescarInventarioEnTiempoReal();
+  showToast('Devolucion eliminada');
+};
 
 window.limpiarDevoluciones = function(){
   if(!confirm('Â¿Limpiar todos los datos de devoluciones?')) return;
@@ -8241,6 +8706,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var data = JSON.parse(localStorage.getItem('descargas-data') || '[]');
     data = data.filter(function(r){ return String(r.id) !== String(id); });
     localStorage.setItem('descargas-data', JSON.stringify(data));
+    eliminarSupabasePorLocalId('distribucion_tiendona', id);
     window.descargasData = data;
 
     var inv = JSON.parse(localStorage.getItem('inventario-data') || '[]');
@@ -9177,6 +9643,7 @@ function renderTablaRecibos(){
       + '<td>'+r.desc+'</td>'
       + '<td>'+(r.monto&&r.monto!='—'?'$'+parseFloat(r.monto).toFixed(2):'—')+'</td>'
       + '<td style="text-align:center;">'
+        + '<button class="btn btn-sm btn-primary" onclick="editarInventario(\'' + inv.id + '\')" style="padding:2px 6px;font-size:0.7rem;margin-right:4px;">Editar</button>'
         + '<button class="btn btn-sm btn-primary" onclick="verRecibo('+i+')" style="margin-right:4px;">👁️</button>'
         + '<button class="btn btn-sm btn-danger" onclick="eliminarRecibo('+i+')">🗑️</button>'
       + '</td>'
