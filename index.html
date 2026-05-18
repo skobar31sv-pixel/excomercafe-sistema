@@ -1817,6 +1817,12 @@
       </div>
 
       <div class="sp-section">
+        <div class="sp-label">Notas del Creador</div>
+        <button class="sp-btn w-full" onclick="openCreatorNotes()">Ver Notas del Creador</button>
+        <div class="sp-sub" style="margin-top:8px;">Informacion del autor y proposito del sistema.</div>
+      </div>
+
+      <div class="sp-section">
         <div class="sp-label">Informacion</div>
         <div style="font-size:0.75rem;color:var(--muted);line-height:1.6;">
           <div>EXCOMERCAFE - Control de Ventas</div>
@@ -1828,6 +1834,40 @@
   </div>
 </div>
 <!-- ══ SCRIPTS ══ -->
+<div class="creator-notes-overlay" id="creator-notes-overlay" onclick="closeCreatorNotesOutside(event)">
+  <div class="creator-notes-modal" role="dialog" aria-modal="true" aria-labelledby="creator-notes-title">
+    <div class="creator-notes-head">
+      <h3 id="creator-notes-title">Notas del Creador</h3>
+      <button type="button" class="creator-notes-close" onclick="closeCreatorNotes()">X</button>
+    </div>
+    <div class="creator-notes-body">
+      <h4>Sistema de Control de Ventas e Inventario - EXCOMERCAFE S.A. DE C.V.</h4>
+      <p><strong>Autor:</strong> Jorge Escobar<br><strong>Ano:</strong> 2026</p>
+
+      <h5>Descripcion</h5>
+      <p>Este sistema fue desarrollado con el proposito de optimizar la gestion de ventas, inventarios y distribucion dentro del entorno agrocomercial. Su diseno busca ofrecer una interfaz clara, funcional y adaptable a las necesidades de cada area operativa de EXCOMERCAFE.</p>
+
+      <h5>Objetivos del proyecto</h5>
+      <ul>
+        <li>Facilitar el registro diario de ventas y remesas.</li>
+        <li>Mejorar la trazabilidad de productos por municipio y centro de distribucion.</li>
+        <li>Centralizar la informacion financiera y logistica en una plataforma unica.</li>
+        <li>Promover la eficiencia y transparencia en los procesos internos.</li>
+      </ul>
+
+      <h5>Notas tecnicas</h5>
+      <ul>
+        <li>Estructura modular para futuras expansiones: reportes, analisis y automatizacion.</li>
+        <li>Integracion con bases de datos seguras y escalables.</li>
+        <li>Interfaz intuitiva para usuarios administrativos y operativos.</li>
+      </ul>
+
+      <h5>Mensaje del creador</h5>
+      <blockquote>"Cada linea de codigo en este sistema fue escrita con la vision de fortalecer la cadena agrocomercial y facilitar el trabajo de quienes hacen posible el movimiento de nuestros productos dia a dia."</blockquote>
+      <p class="creator-signature">- Jorge Escobar, 2026</p>
+    </div>
+  </div>
+</div>
 <script src="./js/core/constants.js"></script>
 <script src="./js/utils/helpers.js"></script>
 <script src="./js/core/storage.js"></script>
@@ -3768,6 +3808,17 @@ window.openSettings = function(){
 };
 window.closeSettings = function(){ document.getElementById('settings-overlay').classList.remove('open'); };
 window.closeSettingsOutside = function(e){ if(e.target===document.getElementById('settings-overlay')) closeSettings(); };
+window.openCreatorNotes = function(){
+  var modal = document.getElementById('creator-notes-overlay');
+  if(modal) modal.classList.add('open');
+};
+window.closeCreatorNotes = function(){
+  var modal = document.getElementById('creator-notes-overlay');
+  if(modal) modal.classList.remove('open');
+};
+window.closeCreatorNotesOutside = function(e){
+  if(e.target === document.getElementById('creator-notes-overlay')) closeCreatorNotes();
+};
 
 function contarLocalStorage(key){
   try{
