@@ -529,7 +529,7 @@
 
   <div class="print-header">
     <h2>CONTROL DE VENTA EN AGROMERCADO</h2>
-    <p id="print-info-line"> — Jueves 7/5/2026</p>
+    <p id="print-info-line"></p>
   </div>
 
   <!-- INFO HEADER -->
@@ -2427,7 +2427,7 @@ var AGROMERCADOS_DATA = {
   window.actualizarFechaDescargas = function(){
     var fecha = document.getElementById('descargas-fecha');
     if (fecha && !fecha.value) {
-      fecha.value = new Date().toISOString().slice(0,10);
+      fecha.value = typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10);
     }
   };
 
@@ -2587,14 +2587,21 @@ window.onMunicipioChange = function(){
 // ── FECHA AUTOMÁTICA ──
 // Esta función ahora está en js/utils/helpers.js
 window.actualizarFecha = function(){
-  var val = document.getElementById('agro-fecha').value;
+  var fechaEl = document.getElementById('agro-fecha');
+  var diaEl = document.getElementById('agro-dia');
+  var infoEl = document.getElementById('print-info-line');
+  var nombreEl = document.getElementById('agro-nombre');
+  if(!fechaEl) return;
+  var val = fechaEl.value;
   if(!val) return;
   var partes = val.split('-');
   var d = new Date(parseInt(partes[0]), parseInt(partes[1])-1, parseInt(partes[2]));
   var dia = diasSemana()[d.getDay()];
-  document.getElementById('agro-dia').value = dia + ', ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
-  document.getElementById('print-info-line').textContent =
-    (document.getElementById('agro-nombre').value||'') + ' — ' + dia + ' ' + d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+  if(diaEl) diaEl.value = dia + ', ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+  if(infoEl) {
+    infoEl.textContent =
+      ((nombreEl && nombreEl.value) || '') + ' — ' + dia + ' ' + d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+  }
 };
 
 // ── FUNCIONES PARA DISTRIBUCIÓN TIENDONA ──
@@ -3109,7 +3116,8 @@ window.cargarInventarioAgromercadoSeleccionado = function(){
 // ── LIMPIAR FORMULARIO ──
 window.limpiarFormulario = function(){
   // Obtener agromercado seleccionado
-  var agromercadoSeleccionado = document.getElementById('agro-nombre').value;
+  var agroNombreEl = document.getElementById('agro-nombre');
+  var agromercadoSeleccionado = agroNombreEl ? agroNombreEl.value : '';
   
   // Pasar disponibilidad de hoy como inventario anterior del nuevo día
   PRODUCTOS.forEach(function(p){
@@ -3136,8 +3144,10 @@ window.limpiarFormulario = function(){
     });
   }
   
-  document.getElementById('campo-gastos').value = '0';
-  document.getElementById('agro-fecha').value = fechaHoy();
+  var gastosEl = document.getElementById('campo-gastos');
+  var fechaEl = document.getElementById('agro-fecha');
+  if(gastosEl) gastosEl.value = '0';
+  if(fechaEl) fechaEl.value = fechaHoy();
   var bSel=document.getElementById('campo-banco'); if(bSel) bSel.value='';
   actualizarFecha();
   calcular();
@@ -3534,7 +3544,7 @@ function revertirInventarioPorVenta(registro){
     if(inventario.length === antes){
       var reversa = {
         id: 'reversa-' + (registro.id || Date.now()),
-        fecha: registro.fecha || new Date().toISOString().slice(0,10),
+        fecha: registro.fecha || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10)),
         ubicacion: 'agromercados',
         lugar: registro.agromercado || registro.nombre || '',
         tipo: 'reversa-venta',
@@ -3759,7 +3769,10 @@ window.actualizarInventarioDesdeRegistro = function(registro, esEdicion){
 window.obtenerDiaSemana = function(fecha){
   if(!fecha) return '';
   var dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  var date = new Date(fecha);
+  var partes = String(fecha).slice(0,10).split('-').map(Number);
+  var date = partes.length === 3
+    ? new Date(partes[0], partes[1] - 1, partes[2])
+    : new Date(fecha);
   return dias[date.getDay()] || '';
 };
 
@@ -4002,7 +4015,7 @@ window.exportarExcel = function(tipo){
   var csv = bom + csvRows.join('\r\n');
   var blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
   var a = document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download=nombre+'_'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
+  a.download=nombre+'_'+(typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0])+'.csv'; a.click();
   showToast('📥 Excel exportado correctamente');
 };
 
@@ -4112,7 +4125,7 @@ window.hacerBackup = function(){
   };
   var blob = new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   var a = document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='backup_excomercafe_'+new Date().toISOString().split('T')[0]+'.json'; a.click();
+  a.download='backup_excomercafe_'+(typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0])+'.json'; a.click();
   showToast('🗂️ Backup descargado');
   closeSettings();
 };
@@ -4234,8 +4247,10 @@ window.limpiarCache = function(){
     });
   });
   
-  document.getElementById('campo-gastos').value = '0';
-  document.getElementById('agro-fecha').value = fechaHoy();
+  var gastosEl = document.getElementById('campo-gastos');
+  var fechaEl = document.getElementById('agro-fecha');
+  if(gastosEl) gastosEl.value = '0';
+  if(fechaEl) fechaEl.value = fechaHoy();
   document.getElementById('agro-dia').value = '';
   
   // Reset dropdowns
@@ -4320,11 +4335,11 @@ window.guardarDevolucion = function(){
 
 window.limpiarFormularioDevoluciones = function(){
   devolucionEditandoId = null;
-  document.getElementById('devolucion-fecha').value = '';
-  document.getElementById('devolucion-agromercado').value = '';
-  document.getElementById('devolucion-producto').value = '';
-  document.getElementById('devolucion-cantidad').value = '0';
-  document.getElementById('devolucion-entregado').value = '';
+  setVal('devolucion-fecha', '');
+  setVal('devolucion-agromercado', '');
+  setVal('devolucion-producto', '');
+  setVal('devolucion-cantidad', '0');
+  setVal('devolucion-entregado', '');
 };
 
 window.renderDevolucionesTable = function(){
@@ -4364,7 +4379,7 @@ window.eliminarDevolucion = function(id){
 
 window.actualizarResumenIngresar = function(){
   var hist = JSON.parse(localStorage.getItem('exc_agro_hist')||'[]');
-  var today = new Date().toISOString().split('T')[0];
+  var today = typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0];
   var registrosHoy = hist.filter(function(r){ return r.fecha === today; }).length;
   var totalVentas = hist.reduce(function(sum, r){ return sum + (parseFloat(r.ventas)||0); }, 0);
   var totalRemesas = hist.reduce(function(sum, r){ return sum + (parseFloat(r.remesa)||0); }, 0);
@@ -5603,7 +5618,7 @@ window.exportarInventarioExcel = function(){
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Control de Inventario");
   
-  var fileName = 'Control_Inventario_' + new Date().toISOString().split('T')[0] + '.xlsx';
+  var fileName = 'Control_Inventario_' + (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]) + '.xlsx';
   XLSX.writeFile(wb, fileName);
   
   showAlert('alert-inventario', 'Archivo exportado correctamente', 'ok');
@@ -5962,7 +5977,7 @@ function revertirDistribucionCDA(dist){
     var ts = Date.now();
     inv.unshift({
       id: 'reversa-distribucion-bodega-' + ts,
-      fecha: dist.fecha || new Date().toISOString().split('T')[0],
+      fecha: dist.fecha || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]),
       ubicacion: 'bodega-local',
       lugar: 'Bodega Principal',
       tipo: 'reversa-distribucion',
@@ -5976,7 +5991,7 @@ function revertirDistribucionCDA(dist){
     });
     inv.unshift({
       id: 'reversa-distribucion-agro-' + ts,
-      fecha: dist.fecha || new Date().toISOString().split('T')[0],
+      fecha: dist.fecha || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]),
       ubicacion: 'agromercados',
       lugar: lugarCompleto,
       tipo: 'reversa-distribucion',
@@ -6081,7 +6096,7 @@ window.exportarDistribucionExcel = function(){
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Distribución CDA");
   
-  var fileName = 'Distribucion_CDA_' + new Date().toISOString().split('T')[0] + '.xlsx';
+  var fileName = 'Distribucion_CDA_' + (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]) + '.xlsx';
   XLSX.writeFile(wb, fileName);
   
   showAlert('distribucion', 'Archivo exportado correctamente', 'ok');
@@ -7477,13 +7492,15 @@ window.enviarDatos = function(){
 };
 
 window.limpiarFormulario = function(){
-  document.getElementById('ingresar-fecha').value = '';
-  document.getElementById('ingresar-distrito').value = '';
-  document.getElementById('ingresar-municipio').value = '';
-  document.getElementById('ingresar-municipio').disabled = true;
-  document.getElementById('ingresar-agromercado').value = '';
-  document.getElementById('ingresar-agromercado').disabled = true;
-  document.getElementById('ingresar-enviar').value = '';
+  setVal('ingresar-fecha', '');
+  setVal('ingresar-distrito', '');
+  setVal('ingresar-municipio', '');
+  var municipio = document.getElementById('ingresar-municipio');
+  if(municipio) municipio.disabled = true;
+  setVal('ingresar-agromercado', '');
+  var agromercado = document.getElementById('ingresar-agromercado');
+  if(agromercado) agromercado.disabled = true;
+  setVal('ingresar-enviar', '');
 };
 
 window.cargarArchivoDevoluciones = function(input){
@@ -7594,7 +7611,7 @@ window.exportarDevoluciones = function(){
   var blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'devoluciones_procesado_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.download = 'devoluciones_procesado_' + (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]) + '.csv';
   a.click();
   showToast('📥 Datos exportados correctamente');
 };
@@ -7692,11 +7709,11 @@ function normalizarDevolucionesParaTabla(data){
 }
 
 window.limpiarFormularioDevoluciones = function(){
-  document.getElementById('devolucion-fecha').value = '';
-  document.getElementById('devolucion-agromercado').value = '';
-  document.getElementById('devolucion-producto').value = '';
-  document.getElementById('devolucion-cantidad').value = '0';
-  document.getElementById('devolucion-entregado').value = '';
+  setVal('devolucion-fecha', '');
+  setVal('devolucion-agromercado', '');
+  setVal('devolucion-producto', '');
+  setVal('devolucion-cantidad', '0');
+  setVal('devolucion-entregado', '');
 };
 
 window.renderDevolucionesTable = function(){
@@ -7784,7 +7801,7 @@ window.exportarDevoluciones = function(){
   var blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], {type: 'text/csv;charset=utf-8;'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'devoluciones_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.download = 'devoluciones_' + (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]) + '.csv';
   a.click();
   showToast('Devoluciones exportadas correctamente');
 };
@@ -8030,7 +8047,7 @@ function sembrarDatosIniciales(){
 
 // Helper: aplicar fecha actual a campos date
 window.aplicarFechaActualATodosLosCampos = function(){
-  var hoy = new Date().toISOString().slice(0,10);
+  var hoy = typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10);
 
   document.querySelectorAll('input[type="date"]').forEach(function(input){
     if (!input.value) input.value = hoy;
@@ -8854,7 +8871,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   window.guardarDistribucionTiendona = function(){
     // Recopilar datos del formulario con lectura segura
-    var fecha = val('descargas-fecha') || new Date().toISOString().slice(0,10);
+    var fecha = val('descargas-fecha') || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var origen = val('descargas-origen') || 'Tiendona';
     var distrito = val('new-desc-distrito');
     var agromercado = val('new-desc-agromercado');
@@ -9264,7 +9281,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Distribución Tiendona");
 
-    var fileName = 'Distribucion_Tiendona_' + (fecha || new Date().toISOString().split('T')[0]) + '.xlsx';
+    var fileName = 'Distribucion_Tiendona_' + (fecha || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0])) + '.xlsx';
     XLSX.writeFile(wb, fileName);
 
     showAlert('descargas', 'Archivo exportado correctamente (' + datos.length + ' filas)', 'ok');
@@ -9853,7 +9870,7 @@ window.actualizarVistaRecibo = function(){
 
 window.nuevoRecibo = function(){
   document.getElementById('recibo-numero').value = generarNumeroRecibo();
-  document.getElementById('recibo-fecha').value = (function(){var d=new Date();return d.toISOString().split('T')[0];})();
+  document.getElementById('recibo-fecha').value = typeof fechaHoy === 'function' ? fechaHoy() : (function(){var d=new Date();return d.toISOString().split('T')[0];})();
   cambiarTipoRecibo();
   showAlert('alert-recibos','✅ Nuevo documento listo para editar.','ok');
 };
@@ -9966,7 +9983,7 @@ window.cargarResumenRemesas = function() {
   const noRemesasMsg = document.getElementById('no-remesas-message');
   if (!bancoGrid || !noRemesasMsg) return;
   const hist = JSON.parse(localStorage.getItem('exc_agro_hist') || '[]');
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10);
 
   const remesasHoy = hist.filter(r =>
     r.fecha === hoy &&
@@ -10062,7 +10079,7 @@ window.actualizarResumenRemesasDia = function(){
   if (!cont) return;
 
   const hist = JSON.parse(localStorage.getItem('exc_agro_hist') || '[]');
-  const hoy = document.getElementById('agro-fecha')?.value || new Date().toISOString().slice(0,10);
+  const hoy = document.getElementById('agro-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
 
   const remesas = hist.filter(r =>
     r.fecha === hoy &&
@@ -10092,7 +10109,18 @@ window.actualizarResumenRemesasDia = function(){
 };
 
 function resumenVentasFechaHoy(){
-  return new Date().toISOString().slice(0,10);
+  try {
+    var parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/El_Salvador',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+    var map = {};
+    parts.forEach(function(part){ map[part.type] = part.value; });
+    if (map.year && map.month && map.day) return map.year + '-' + map.month + '-' + map.day;
+  } catch(error) {}
+  return typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10);
 }
 
 function resumenVentasParseDate(value){
@@ -10110,6 +10138,49 @@ function resumenVentasFormatDate(date){
 
 function resumenVentasMoney(value){
   return '$' + (Number(value || 0) || 0).toFixed(2);
+}
+
+function resumenVentasDesdeFilaSupabase(row){
+  if (!row) return null;
+  var payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+  var record = Object.assign({}, payload);
+  record.id = record.id || row.local_id || row.id || '';
+  record.local_id = record.local_id || row.local_id || '';
+  record.fecha = record.fecha || row.fecha || '';
+  record.dia = record.dia || row.dia || '';
+  record.distrito = record.distrito || row.distrito || '';
+  record.municipio = record.municipio || row.municipio || '';
+  record.agromercado = record.agromercado || row.agromercado || row.nombre || '';
+  record.ventas = record.ventas !== undefined ? record.ventas : row.ventas;
+  record.gastos = record.gastos !== undefined ? record.gastos : row.gastos;
+  record.remesa = record.remesa !== undefined ? record.remesa : row.remesa;
+  record.dineroRemesado = record.dineroRemesado !== undefined ? record.dineroRemesado : row.dinero_remesado;
+  record.banco = record.banco || row.banco || '';
+  record.ventas_unidades = record.ventas_unidades || {
+    ab1: Number(row.arroz || 0) || 0,
+    ap1: Number(row.arroz_precocido || 0) || 0,
+    fr1: Number(row.frijol_1lb || 0) || 0,
+    fr4: Number(row.frijol_4lb || 0) || 0,
+    ac: Number(row.aceite_750ml || 0) || 0,
+    ha: Number(row.harina_820grs || 0) || 0
+  };
+  record.supabase_synced = true;
+  return record;
+}
+
+async function resumenVentasLeerHistorial(desde, hasta){
+  if (window.supabaseRequest) {
+    try {
+      var query = '/rest/v1/ventas_agromercado?select=*&fecha=gte.' + encodeURIComponent(desde)
+        + '&fecha=lte.' + encodeURIComponent(hasta)
+        + '&order=fecha.asc,creado_en.asc&limit=5000';
+      var rows = await window.supabaseRequest(query);
+      if (Array.isArray(rows)) return rows.map(resumenVentasDesdeFilaSupabase).filter(Boolean);
+    } catch(error) {
+      console.warn('Resumen desde Supabase pendiente:', error.message);
+    }
+  }
+  try { return JSON.parse(localStorage.getItem('exc_agro_hist') || '[]'); } catch(e) { return []; }
 }
 
 function resumenVentasRegistroId(record){
@@ -10171,7 +10242,7 @@ window.actualizarPeriodoResumenVentas = function(){
   renderResumenVentasPeriodo();
 };
 
-window.renderResumenVentasPeriodo = function(){
+window.renderResumenVentasPeriodo = async function(){
   var cont = document.getElementById('resumen-ventas-periodo') || document.getElementById('resumen-remesas-dia');
   if (!cont) return;
 
@@ -10187,8 +10258,8 @@ window.renderResumenVentasPeriodo = function(){
     hasta = tmp;
   }
 
-  var hist = [];
-  try { hist = JSON.parse(localStorage.getItem('exc_agro_hist') || '[]'); } catch(e) {}
+  cont.innerHTML = '<div class="no-remesas">Cargando resumen desde Supabase...</div>';
+  var hist = await resumenVentasLeerHistorial(desde, hasta);
   var bancoFiltro = resumenVentasAjustarBancoFiltro(hist);
   var rows = hist.filter(function(r){
     var fecha = String(r.fecha || '').slice(0,10);
@@ -10894,7 +10965,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.guardarDistribucionTiendona = function(){
-    var fecha = document.getElementById('descargas-fecha')?.value || new Date().toISOString().slice(0,10);
+    var fecha = document.getElementById('descargas-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var observaciones = document.getElementById('descargas-observaciones')?.value || '';
     var rows = readRows('TIENDONA');
 
@@ -10961,7 +11032,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.guardarDistribucion = function(){
-    var fecha = document.getElementById('distribucion-fecha')?.value || new Date().toISOString().slice(0,10);
+    var fecha = document.getElementById('distribucion-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var observaciones = document.getElementById('distribucion-observaciones')?.value || '';
     var rows = readRows('CDA');
 
@@ -11240,7 +11311,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   window.guardarDistribucionTiendona = function(){
-    var fecha = document.getElementById('descargas-fecha')?.value || new Date().toISOString().slice(0,10);
+    var fecha = document.getElementById('descargas-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var observaciones = document.getElementById('descargas-observaciones')?.value || '';
     var rows = readMatrixRows('TIENDONA');
 
@@ -11285,7 +11356,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.guardarDistribucion = function(){
-    var fecha = document.getElementById('distribucion-fecha')?.value || new Date().toISOString().slice(0,10);
+    var fecha = document.getElementById('distribucion-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var observaciones = document.getElementById('distribucion-observaciones')?.value || '';
     var rows = readMatrixRows('CDA');
 
@@ -11774,7 +11845,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.guardarRegistro = function(event){
     if (event && event.preventDefault) event.preventDefault();
     updateVentaMatrixTotals();
-    var fecha = document.getElementById('agro-fecha')?.value || new Date().toISOString().slice(0,10);
+    var fecha = document.getElementById('agro-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var dia = document.getElementById('agro-dia')?.value || '';
     var gastos = Number(document.getElementById('campo-gastos')?.value || 0) || 0;
     var rows = readVentaRows(false);
@@ -12445,7 +12516,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], { type:'text/csv;charset=utf-8;' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'Reporte_Bancos_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.download = 'Reporte_Bancos_' + (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().split('T')[0]) + '.csv';
     a.click();
     if(typeof showToast === 'function') showToast('Excel exportado correctamente');
   };
@@ -12490,7 +12561,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function today(){
     if (typeof fechaHoy === 'function') return fechaHoy();
-    return new Date().toISOString().slice(0,10);
+    return typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10);
   }
 
   function sameDate(value, fecha){
@@ -12965,7 +13036,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   window.guardarDistribucionTiendonaFija = function(){
-    var fecha = document.getElementById('descargas-fecha')?.value || new Date().toISOString().slice(0,10);
+    var fecha = document.getElementById('descargas-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10));
     var observaciones = document.getElementById('descargas-observaciones')?.value || '';
     var rows = readDistribucionTiendonaFixRows();
 
@@ -13063,7 +13134,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       var result = registrarMovimientoInventario({
         id: salidaId,
-        fecha: row.fecha || new Date().toISOString().slice(0,10),
+        fecha: row.fecha || (typeof fechaHoy === 'function' ? fechaHoy() : new Date().toISOString().slice(0,10)),
         ubicacion: source,
         lugar: 'Tiendona',
         tipo: 'salida-distribucion',
