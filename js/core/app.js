@@ -55,11 +55,11 @@ window.mostrarSeccionDatos = function(seccion){
         break;
     }
     
-    // Actualizar botones activos
-    document.querySelectorAll('.tabs .tab-btn').forEach(function(b){
+    // Actualizar botones internos de Datos sin afectar el menu principal
+    document.querySelectorAll('.data-tabs .data-tab-btn').forEach(function(b){
       b.classList.remove('active');
     });
-    document.querySelectorAll('.tabs .tab-btn').forEach(function(b){
+    document.querySelectorAll('.data-tabs .data-tab-btn').forEach(function(b){
       if((b.getAttribute('onclick')||'').includes("'"+seccion+"'")) b.classList.add('active');
     });
   }
