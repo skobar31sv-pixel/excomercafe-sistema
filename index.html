@@ -29,6 +29,134 @@
   };
 </script>
 <style>
+  .auth-overlay{
+    position:fixed;
+    inset:0;
+    z-index:5000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:linear-gradient(135deg, rgba(7,24,39,.98), rgba(11,32,51,.96));
+  }
+  .auth-overlay.auth-hidden,
+  .auth-card.auth-hidden{display:none;}
+  .auth-card{
+    width:min(390px, 100%);
+    background:#ffffff;
+    color:#0f172a;
+    border:1px solid rgba(191,219,254,.55);
+    border-radius:14px;
+    box-shadow:0 22px 60px rgba(0,0,0,.28);
+    overflow:hidden;
+  }
+  .auth-head{
+    padding:18px 20px;
+    background:linear-gradient(90deg,#071827,#0b2033);
+    color:#ffffff;
+  }
+  .auth-head span{
+    display:block;
+    color:#a8f0bd;
+    font-size:.68rem;
+    font-weight:900;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+  }
+  .auth-head strong{
+    display:block;
+    margin-top:3px;
+    font-size:1.45rem;
+    letter-spacing:.6px;
+  }
+  .auth-body{
+    padding:18px 20px 20px;
+    display:grid;
+    gap:12px;
+  }
+  .auth-body label{
+    color:#334155 !important;
+    font-size:.78rem;
+    font-weight:900;
+    letter-spacing:.4px;
+    text-transform:uppercase;
+  }
+  .auth-body input{
+    width:100%;
+    min-height:44px !important;
+    border:1px solid #bfdbfe !important;
+    border-radius:10px !important;
+    background:#f8fafc !important;
+    color:#0f172a !important;
+    padding:10px 12px !important;
+  }
+  .auth-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .auth-actions button{
+    flex:1;
+    min-height:42px;
+    border:0;
+    border-radius:10px;
+    background:#166534;
+    color:#ffffff;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .auth-error{
+    min-height:18px;
+    color:#b91c1c;
+    font-size:.78rem;
+    font-weight:800;
+  }
+  .auth-toggle{
+    border:0;
+    background:transparent;
+    color:#17456b;
+    font-size:.78rem;
+    font-weight:900;
+    cursor:pointer;
+    padding:2px 0;
+    text-align:center;
+  }
+  .auth-note{
+    font-size:.72rem;
+    color:#64748b;
+    line-height:1.35;
+  }
+  .auth-remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#334155;
+    font-size:.78rem;
+    font-weight:800;
+  }
+  .auth-remember input{
+    width:16px !important;
+    height:16px !important;
+    min-height:16px !important;
+    padding:0 !important;
+  }
+  .auth-user-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-height:30px;
+    padding:6px 10px;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.10);
+    color:#ffffff;
+    font-size:.78rem;
+    font-weight:800;
+  }
+  .hbtn-logout{
+    background:#7f1d1d !important;
+    color:#ffffff !important;
+  }
   .online-indicator{
     display:inline-flex;
     align-items:center;
@@ -437,6 +565,61 @@
 </head>
 <body class="smart-menu-collapsed">
 
+<div class="auth-overlay" id="auth-overlay">
+  <form class="auth-card" id="auth-login-card" onsubmit="loginUsuarioSistema(event)">
+    <div class="auth-head">
+      <span>Acceso protegido</span>
+      <strong>EXCOMERCAFE</strong>
+    </div>
+    <div class="auth-body">
+      <div class="fg">
+        <label>Usuario</label>
+        <input type="text" id="login-usuario" autocomplete="username" placeholder="Ej. admin" required>
+      </div>
+      <div class="fg">
+        <label>Contraseña</label>
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="Contraseña" required>
+      </div>
+      <label class="auth-remember">
+        <input type="checkbox" id="login-remember" checked>
+        Mantener sesión abierta en esta PC
+      </label>
+      <div class="auth-error" id="auth-error"></div>
+      <div class="auth-actions">
+        <button type="submit">Entrar</button>
+      </div>
+      <button type="button" class="auth-toggle" onclick="mostrarCrearUsuario()">Crear nuevo usuario</button>
+    </div>
+  </form>
+
+  <form class="auth-card auth-hidden" id="auth-register-card" onsubmit="crearUsuarioSistema(event)">
+    <div class="auth-head">
+      <span>Nuevo acceso</span>
+      <strong>Crear usuario</strong>
+    </div>
+    <div class="auth-body">
+      <div class="fg">
+        <label>Usuario</label>
+        <input type="text" id="register-usuario" autocomplete="username" placeholder="Ej. operador1" required>
+      </div>
+      <div class="fg">
+        <label>Contraseña</label>
+        <input type="password" id="register-password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required>
+      </div>
+      <div class="fg">
+        <label>Clave de registro</label>
+        <input type="password" id="register-clave" placeholder="Clave autorizada" required>
+      </div>
+      <div class="auth-note">Solo se crea si coincide la clave de registro definida por el administrador.</div>
+      <div class="auth-error" id="register-error"></div>
+      <div class="auth-actions">
+        <button type="submit">Crear usuario</button>
+      </div>
+      <button type="button" class="auth-toggle" onclick="mostrarLoginUsuario()">Volver a iniciar sesión</button>
+    </div>
+  </form>
+</div>
+
 <!-- ══ HEADER ══ -->
 <header class="header">
   <button type="button" class="sidebar-mobile-toggle" aria-label="Abrir menú" aria-expanded="false" onclick="toggleMobileSidebar()">☰</button>
@@ -447,9 +630,11 @@
   </div>
   <div class="header-actions">
     <button type="button" class="hbtn smart-menu-hide" onclick="hideSmartMenuNow()" title="Ocultar menu">Ocultar</button>
+    <span id="auth-user-badge" class="auth-user-badge" title="Usuario activo">Usuario</span>
     <span id="online-indicator" class="online-indicator syncing" title="Estado de conexion">Sincronizando...</span>
     <button class="hbtn hbtn-chat" onclick="toggleChatPanel()" title="Usuarios conectados y chat">Chat <span id="online-users-count">0</span></button>
     <button class="hbtn hbtn-settings" onclick="openSettings()">⚙️ Ajustes</button>
+    <button class="hbtn hbtn-logout" onclick="logoutUsuarioSistema()" title="Cerrar sesión">Salir</button>
   </div>
 </header>
 
@@ -491,7 +676,7 @@
   </div>
   <div class="chat-tools">
     <button type="button" onclick="document.getElementById('chat-image-input').click()">Imagen</button>
-    <button type="button" onclick="borrarTodosChat()">Borrar todo</button>
+    <button type="button" onclick="borrarTodosChat()">Borrar mis mensajes</button>
   </div>
   <div class="chat-messages" id="chat-messages">Cargando chat...</div>
   <div class="chat-send">
@@ -2138,13 +2323,248 @@ window.SUPABASE_CONFIG = {
   key: 'sb_publishable_AIUqdFrAct3bR6y8Y6t1Qw_qNGJ5GHs'
 };
 
+window.AUTH_STORAGE_KEY = 'excomercafe_auth_session';
+window.AUTH_REMEMBER_KEY = 'excomercafe_auth_remember';
+window.REGISTRATION_KEY = 'EXCOMERCAFE2026';
+window.authSession = null;
+
+function usuarioToEmail(usuario){
+  usuario = String(usuario || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+  return usuario ? (usuario + '@excomercafe.local') : '';
+}
+
+function authUserNameFromSession(session){
+  var user = session && session.user ? session.user : {};
+  var meta = user.user_metadata || {};
+  return meta.username || meta.name || (user.email ? String(user.email).split('@')[0] : '') || 'Usuario';
+}
+
+function guardarSesionAuth(session){
+  window.authSession = session || null;
+  var remember = localStorage.getItem(window.AUTH_REMEMBER_KEY) !== '0';
+  if(session) {
+    var value = JSON.stringify(session);
+    if(remember) {
+      localStorage.setItem(window.AUTH_STORAGE_KEY, value);
+      sessionStorage.removeItem(window.AUTH_STORAGE_KEY);
+    } else {
+      sessionStorage.setItem(window.AUTH_STORAGE_KEY, value);
+      localStorage.removeItem(window.AUTH_STORAGE_KEY);
+    }
+  } else {
+    localStorage.removeItem(window.AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(window.AUTH_STORAGE_KEY);
+  }
+}
+
+function leerSesionAuth(){
+  try {
+    var raw = sessionStorage.getItem(window.AUTH_STORAGE_KEY) || localStorage.getItem(window.AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+function authToken(){
+  return window.authSession && window.authSession.access_token ? window.authSession.access_token : '';
+}
+
+window.haySesionSupabase = function(){
+  if(authToken()) return true;
+  var session = leerSesionAuth();
+  return !!(session && session.refresh_token);
+};
+
+window.mostrarCrearUsuario = function(){
+  var login = document.getElementById('auth-login-card');
+  var register = document.getElementById('auth-register-card');
+  if(login) login.classList.add('auth-hidden');
+  if(register) register.classList.remove('auth-hidden');
+  var errorEl = document.getElementById('register-error');
+  if(errorEl) errorEl.textContent = '';
+};
+
+window.mostrarLoginUsuario = function(){
+  var login = document.getElementById('auth-login-card');
+  var register = document.getElementById('auth-register-card');
+  if(register) register.classList.add('auth-hidden');
+  if(login) login.classList.remove('auth-hidden');
+  var errorEl = document.getElementById('auth-error');
+  if(errorEl) errorEl.textContent = '';
+};
+
+function aplicarSesionAuth(session){
+  guardarSesionAuth(session);
+  var nombre = authUserNameFromSession(session);
+  localStorage.setItem('chat_username', nombre);
+  var badge = document.getElementById('auth-user-badge');
+  if(badge) badge.textContent = nombre;
+  var overlay = document.getElementById('auth-overlay');
+  if(overlay) overlay.classList.toggle('auth-hidden', !!session);
+  if(typeof actualizarUsuarioActualUI === 'function') actualizarUsuarioActualUI();
+}
+
+async function refrescarSesionAuth(){
+  var session = window.authSession || leerSesionAuth();
+  if(!session || !session.refresh_token) return null;
+  var expiresAt = Number(session.expires_at || 0) * 1000;
+  if(session.access_token && expiresAt && Date.now() < expiresAt - 60000) {
+    aplicarSesionAuth(session);
+    return session;
+  }
+  var response = await fetch(window.SUPABASE_CONFIG.url + '/auth/v1/token?grant_type=refresh_token', {
+    method:'POST',
+    headers:{
+      apikey: window.SUPABASE_CONFIG.key,
+      'Content-Type':'application/json'
+    },
+    body: JSON.stringify({ refresh_token: session.refresh_token })
+  });
+  var data = await response.json().catch(function(){ return null; });
+  if(!response.ok) {
+    aplicarSesionAuth(null);
+    return null;
+  }
+  if(data && data.expires_in && !data.expires_at) {
+    data.expires_at = Math.floor(Date.now() / 1000) + Number(data.expires_in || 0);
+  }
+  aplicarSesionAuth(data);
+  return data;
+}
+
+window.loginUsuarioSistema = async function(event){
+  if(event && event.preventDefault) event.preventDefault();
+  var errorEl = document.getElementById('auth-error');
+  if(errorEl) errorEl.textContent = 'Validando...';
+  var usuario = (document.getElementById('login-usuario')?.value || '').trim();
+  var password = document.getElementById('login-password')?.value || '';
+  var email = usuarioToEmail(usuario);
+  if(!email || !password) {
+    if(errorEl) errorEl.textContent = 'Escribe usuario y contraseña.';
+    return false;
+  }
+  try{
+    var remember = document.getElementById('login-remember');
+    localStorage.setItem(window.AUTH_REMEMBER_KEY, remember && !remember.checked ? '0' : '1');
+    var response = await fetch(window.SUPABASE_CONFIG.url + '/auth/v1/token?grant_type=password', {
+      method:'POST',
+      headers:{
+        apikey: window.SUPABASE_CONFIG.key,
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify({ email: email, password: password })
+    });
+    var data = await response.json().catch(function(){ return null; });
+    if(!response.ok) {
+      var loginMsg = (data && (data.error_description || data.msg || data.message)) || '';
+      if(response.status === 400 && /invalid login/i.test(loginMsg)) {
+        throw new Error('Usuario o contraseña incorrectos, o el usuario todavía no existe.');
+      }
+      if(/confirm/i.test(loginMsg)) {
+        throw new Error('El usuario existe, pero falta confirmarlo en Supabase.');
+      }
+      throw new Error(loginMsg || 'No se pudo iniciar sesión.');
+    }
+    if(data && data.expires_in && !data.expires_at) {
+      data.expires_at = Math.floor(Date.now() / 1000) + Number(data.expires_in || 0);
+    }
+    if(data.user) {
+      data.user.user_metadata = Object.assign({}, data.user.user_metadata || {}, { username: usuario });
+    }
+    aplicarSesionAuth(data);
+    if(errorEl) errorEl.textContent = '';
+    registrarPresenciaOnline();
+    cargarChatOnline();
+    if(typeof window.sincronizarPendientesSupabase === 'function') window.sincronizarPendientesSupabase({ noInterrupt:true, silent:true }).catch(function(){});
+    if(typeof showToast === 'function') showToast('Bienvenido, ' + usuario);
+  }catch(error){
+    aplicarSesionAuth(null);
+    if(errorEl) errorEl.textContent = error.message || 'No se pudo entrar. Revisa usuario y contraseña.';
+  }
+  return false;
+};
+
+window.crearUsuarioSistema = async function(event){
+  if(event && event.preventDefault) event.preventDefault();
+  var errorEl = document.getElementById('register-error');
+  if(errorEl) errorEl.textContent = 'Creando usuario...';
+  var usuario = (document.getElementById('register-usuario')?.value || '').trim();
+  var password = document.getElementById('register-password')?.value || '';
+  var clave = document.getElementById('register-clave')?.value || '';
+  var email = usuarioToEmail(usuario);
+
+  if(clave !== window.REGISTRATION_KEY) {
+    if(errorEl) errorEl.textContent = 'Clave de registro incorrecta.';
+    return false;
+  }
+  if(!email || password.length < 6) {
+    if(errorEl) errorEl.textContent = 'Usuario válido y contraseña de mínimo 6 caracteres.';
+    return false;
+  }
+
+  try{
+    var response = await fetch(window.SUPABASE_CONFIG.url + '/auth/v1/signup', {
+      method:'POST',
+      headers:{
+        apikey: window.SUPABASE_CONFIG.key,
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        data: { username: usuario, name: usuario }
+      })
+    });
+    var data = await response.json().catch(function(){ return null; });
+    if(!response.ok) {
+      if(response.status === 429) {
+        throw new Error('Demasiados intentos. Espera unos minutos antes de crear otro usuario.');
+      }
+      throw new Error((data && (data.error_description || data.msg || data.message)) || 'No se pudo crear.');
+    }
+    if(errorEl) errorEl.textContent = 'Usuario creado. Ya puedes iniciar sesión.';
+    var loginUsuario = document.getElementById('login-usuario');
+    if(loginUsuario) loginUsuario.value = usuario;
+    setTimeout(mostrarLoginUsuario, 900);
+  }catch(error){
+    if(errorEl) errorEl.textContent = error.message || 'No se pudo crear. Puede que el usuario ya exista o Auth no permita registros.';
+  }
+  return false;
+};
+
+window.logoutUsuarioSistema = function(){
+  guardarSesionAuth(null);
+  localStorage.removeItem(window.AUTH_REMEMBER_KEY);
+  localStorage.removeItem('chat_username');
+  var overlay = document.getElementById('auth-overlay');
+  if(overlay) overlay.classList.remove('auth-hidden');
+  var pass = document.getElementById('login-password');
+  if(pass) pass.value = '';
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  var remember = document.getElementById('login-remember');
+  if(remember) remember.checked = localStorage.getItem(window.AUTH_REMEMBER_KEY) !== '0';
+  var session = leerSesionAuth();
+  if(session) aplicarSesionAuth(session);
+  else aplicarSesionAuth(null);
+  refrescarSesionAuth().catch(function(){ aplicarSesionAuth(null); });
+});
+
 window.supabaseRequest = async function(table, options){
   options = options || {};
   var method = options.method || 'GET';
   var path = table.charAt(0) === '/' ? table : '/rest/v1/' + table;
+  if(!authToken()) {
+    await refrescarSesionAuth();
+  }
+  if(!authToken() && !options.allowAnon) {
+    throw new Error('Sesion requerida');
+  }
   var headers = {
     apikey: window.SUPABASE_CONFIG.key,
-    Authorization: 'Bearer ' + window.SUPABASE_CONFIG.key,
+    Authorization: 'Bearer ' + (authToken() || window.SUPABASE_CONFIG.key),
     'Content-Type': 'application/json'
   };
   if (options.prefer) headers.Prefer = options.prefer;
@@ -2197,6 +2617,7 @@ window.chatClientId = localStorage.getItem('chat_client_id') || ('client-' + Dat
 localStorage.setItem('chat_client_id', window.chatClientId);
 
 function chatName(){
+  if(window.authSession) return authUserNameFromSession(window.authSession);
   return (localStorage.getItem('chat_username') || '').trim() || 'Usuario';
 }
 
@@ -2253,7 +2674,8 @@ function chatSelectedTarget(){
   var option = select.options[select.selectedIndex];
   return {
     client_id: clientId,
-    nombre: option ? (option.getAttribute('data-nombre') || option.textContent || 'Usuario') : 'Usuario'
+    nombre: option ? (option.getAttribute('data-nombre') || option.textContent || 'Usuario') : 'Usuario',
+    user_id: option ? (option.getAttribute('data-user-id') || '') : ''
   };
 }
 
@@ -2276,6 +2698,7 @@ function actualizarDestinosChat(usuarios){
     opt.value = u.client_id;
     opt.textContent = 'Directo: ' + (u.nombre || 'Usuario');
     opt.setAttribute('data-nombre', u.nombre || 'Usuario');
+    opt.setAttribute('data-user-id', u.user_id || '');
     select.appendChild(opt);
   });
   if(previo && Array.from(select.options).some(function(opt){ return opt.value === previo; })) {
@@ -2443,6 +2866,7 @@ window.guardarChatUsuario = function(){
 };
 
 async function registrarPresenciaOnline(){
+  if(!window.haySesionSupabase || !window.haySesionSupabase()) return;
   if(!window.supabaseRequest) return;
   try{
     await window.supabaseRequest('presence_online?on_conflict=client_id', {
@@ -2450,6 +2874,7 @@ async function registrarPresenciaOnline(){
       prefer:'resolution=merge-duplicates,return=minimal',
       body:[{
         client_id: window.chatClientId,
+        user_id: window.authSession && window.authSession.user ? window.authSession.user.id : null,
         nombre: chatName(),
         pagina: location.pathname || 'index',
         ultimo_visto: new Date().toISOString()
@@ -2461,11 +2886,12 @@ async function registrarPresenciaOnline(){
 }
 
 async function cargarChatOnline(){
+  if(!window.haySesionSupabase || !window.haySesionSupabase()) return;
   if(!window.supabaseRequest) return;
   try{
     await registrarPresenciaOnline();
     var desde = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    var usuarios = await window.supabaseRequest('/rest/v1/presence_online?select=client_id,nombre,ultimo_visto&ultimo_visto=gte.' + encodeURIComponent(desde));
+    var usuarios = await window.supabaseRequest('/rest/v1/presence_online?select=client_id,user_id,nombre,ultimo_visto&ultimo_visto=gte.' + encodeURIComponent(desde));
     var count = (usuarios || []).length;
     var countEl = document.getElementById('online-users-count');
     var presenceEl = document.getElementById('chat-presence');
@@ -2549,12 +2975,19 @@ window.enviarChatMensaje = async function(){
   try{
     var target = chatSelectedTarget();
     var payload = target
-      ? 'CHATDM:' + JSON.stringify({ to_client_id:target.client_id, to_name:target.nombre, text:mensaje })
+      ? 'CHATDM:' + JSON.stringify({ to_client_id:target.client_id, to_user_id:target.user_id, to_name:target.nombre, text:mensaje })
       : mensaje;
+    var row = { client_id: window.chatClientId, nombre: chatName(), mensaje: payload };
+    if(target) {
+      row.privado = true;
+      row.destinatario_client_id = target.client_id;
+      row.destinatario_user_id = target.user_id || null;
+      row.destinatario_nombre = target.nombre;
+    }
     await window.supabaseRequest('chat_messages', {
       method:'POST',
       prefer:'return=minimal',
-      body:[{ client_id: window.chatClientId, nombre: chatName(), mensaje: payload }]
+      body:[row]
     });
     input.value = '';
     cargarChatOnline();
@@ -2575,12 +3008,19 @@ window.enviarChatImagen = async function(input){
     var dataUrl = await resizeChatImage(file);
     var target = chatSelectedTarget();
     var payload = target
-      ? 'CHATDM:' + JSON.stringify({ type:'image', to_client_id:target.client_id, to_name:target.nombre, src:dataUrl, name:file.name || 'imagen' })
+      ? 'CHATDM:' + JSON.stringify({ type:'image', to_client_id:target.client_id, to_user_id:target.user_id, to_name:target.nombre, src:dataUrl, name:file.name || 'imagen' })
       : 'CHATIMG:' + JSON.stringify({ src:dataUrl, name:file.name || 'imagen' });
+    var row = { client_id: window.chatClientId, nombre: chatName(), mensaje: payload };
+    if(target) {
+      row.privado = true;
+      row.destinatario_client_id = target.client_id;
+      row.destinatario_user_id = target.user_id || null;
+      row.destinatario_nombre = target.nombre;
+    }
     await window.supabaseRequest('chat_messages', {
       method:'POST',
       prefer:'return=minimal',
-      body:[{ client_id: window.chatClientId, nombre: chatName(), mensaje: payload }]
+      body:[row]
     });
     input.value = '';
     cargarChatOnline();
@@ -2604,7 +3044,7 @@ window.borrarMensajeChat = async function(id){
 };
 
 window.borrarTodosChat = async function(){
-  if(!confirm('Borrar todos los mensajes del chat?')) return;
+  if(!confirm('Borrar tus mensajes del chat?')) return;
   try{
     await window.supabaseRequest('/rest/v1/chat_messages?id=not.is.null', {
       method:'DELETE',
@@ -2612,7 +3052,7 @@ window.borrarTodosChat = async function(){
     });
     window.chatLastMessageId = null;
     cargarChatOnline();
-    if(typeof showToast === 'function') showToast('Chat borrado.');
+    if(typeof showToast === 'function') showToast('Tus mensajes fueron borrados.');
   }catch(e){
     if(typeof showToast === 'function') showToast('No se pudo borrar el chat.');
   }
@@ -2622,11 +3062,15 @@ document.addEventListener('DOMContentLoaded', function(){
   var input = document.getElementById('chat-username');
   if(input) input.value = chatName() === 'Usuario' ? '' : chatName();
   actualizarUsuarioActualUI();
-  registrarPresenciaOnline();
-  cargarChatOnline();
-  setInterval(function(){
+  if(window.haySesionSupabase && window.haySesionSupabase()){
     registrarPresenciaOnline();
     cargarChatOnline();
+  }
+  setInterval(function(){
+    if(window.haySesionSupabase && window.haySesionSupabase()){
+      registrarPresenciaOnline();
+      cargarChatOnline();
+    }
   }, 10000);
 });
 </script>
@@ -11387,7 +11831,7 @@ function resumenVentasDesdeFilaSupabase(row){
 }
 
 async function resumenVentasLeerHistorial(desde, hasta){
-  if (window.supabaseRequest) {
+  if (window.supabaseRequest && window.haySesionSupabase && window.haySesionSupabase()) {
     try {
       var query = '/rest/v1/ventas_agromercado?select=*&fecha=gte.' + encodeURIComponent(desde)
         + '&fecha=lte.' + encodeURIComponent(hasta)
@@ -14733,6 +15177,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.sincronizarPendientesSupabase = async function(options){
     options = options || {};
+    if (!window.haySesionSupabase || !window.haySesionSupabase()) {
+      setOnlineIndicator(navigator.onLine ? 'syncing' : 'offline', navigator.onLine ? 'Inicia sesion' : 'Sin conexion');
+      if (!options.silent) currentOnlineStatus('Inicia sesion para sincronizar con Supabase.');
+      return { ok: false, skipped: true, reason: 'auth-required' };
+    }
     if (window.supabaseSyncRunning) return { ok: true, skipped: true };
     window.supabaseSyncRunning = true;
     setOnlineIndicator('syncing', 'Sincronizando...');
@@ -14786,6 +15235,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   function syncSoon(){
+    if (!window.haySesionSupabase || !window.haySesionSupabase()) return;
     setTimeout(function(){
       window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
         console.warn('No se pudo sincronizar con Supabase:', error);
@@ -14842,6 +15292,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setOnlineIndicator(navigator.onLine ? 'syncing' : 'offline', navigator.onLine ? 'Sincronizando...' : 'Sin conexion');
     if (typeof actualizarPeriodoResumenVentas === 'function') actualizarPeriodoResumenVentas();
     setTimeout(function(){
+      if (!window.haySesionSupabase || !window.haySesionSupabase()) {
+        setOnlineIndicator(navigator.onLine ? 'syncing' : 'offline', navigator.onLine ? 'Inicia sesion' : 'Sin conexion');
+        return;
+      }
       window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
         console.warn('Sincronizacion inicial pendiente:', error);
       });
@@ -14854,6 +15308,10 @@ document.addEventListener('DOMContentLoaded', function() {
         currentOnlineStatus('Sin conexion. Esperando internet para sincronizar.');
         return;
       }
+      if (!window.haySesionSupabase || !window.haySesionSupabase()) {
+        setOnlineIndicator('syncing', 'Inicia sesion');
+        return;
+      }
       window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
         console.warn('Sincronizacion automatica pendiente:', error);
       });
@@ -14861,6 +15319,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.addEventListener('online', function(){
       setOnlineIndicator('syncing', 'Sincronizando...');
+      if (!window.haySesionSupabase || !window.haySesionSupabase()) {
+        setOnlineIndicator('syncing', 'Inicia sesion');
+        return;
+      }
       window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
         console.warn('Sincronizacion al reconectar pendiente:', error);
       });
