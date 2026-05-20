@@ -14,7 +14,10 @@ window.fechaHoySV = function(){
     if (map.year && map.month && map.day) return map.year + '-' + map.month + '-' + map.day;
   } catch(error) {}
   var d = new Date();
-  return d.toISOString().split('T')[0];
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
 };
 
 window.fechaHoy = window.fechaHoySV;
@@ -39,6 +42,127 @@ window.obtenerFechaHoyTexto = function(){
     });
   }
 };
+
+window.formatearFecha = function(fecha){
+  var value = fecha === undefined ? new Date() : fecha;
+  var d;
+  if (value instanceof Date) {
+    d = value;
+  } else if (typeof value === 'string') {
+    var clean = value.trim();
+    if (!clean) d = new Date();
+    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) return clean;
+    else if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
+      var parts = clean.slice(0, 10).split('-').map(Number);
+      d = new Date(parts[0], parts[1] - 1, parts[2]);
+    } else {
+      d = new Date(clean);
+    }
+  } else {
+    d = new Date(value);
+  }
+  if (isNaN(d.getTime())) d = new Date();
+  var day = String(d.getDate()).padStart(2, '0');
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var year = d.getFullYear();
+  return day + '/' + month + '/' + year;
+};
+
+window.formatearHora = function(fecha){
+  var value = fecha === undefined ? new Date() : fecha;
+  var d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) d = new Date();
+  return d.toLocaleTimeString('es-SV', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).toUpperCase();
+};
+
+window.formatearFechaHora = function(fecha, hora){
+  return window.formatearFecha(fecha) + (hora ? ' | ' + hora : '');
+};
+
+window.formatearFechaVisual = window.formatearFecha;
+
+window.obtenerHoraActual = function(){
+  return window.formatearHora(new Date());
+};
+
+// ============================================================================
+// Helpers globales del sistema (compatibilidad index.html)
+// Se definen aqui porque este archivo se carga antes de los scripts inline.
+// ============================================================================
+if (!window.fechaVistaSistema) {
+  window.fechaVistaSistema = function(valor){
+    if(!valor) return '';
+
+    if(valor instanceof Date){
+      var d = String(valor.getDate()).padStart(2,'0');
+      var m = String(valor.getMonth()+1).padStart(2,'0');
+      var y = valor.getFullYear();
+      return d + '/' + m + '/' + y;
+    }
+
+    if(typeof window.formatearFecha === 'function'){
+      return window.formatearFecha(valor);
+    }
+
+    if(typeof valor === 'string' && valor.includes('-')){
+      var p = valor.split('T')[0].split('-');
+      if(p.length === 3) return p[2] + '/' + p[1] + '/' + p[0];
+    }
+
+    return String(valor);
+  };
+}
+
+if (!window.fechaISOActualSistema) {
+  window.fechaISOActualSistema = function(){
+    if(typeof window.obtenerFechaHoyISO === 'function') return window.obtenerFechaHoyISO();
+    if(typeof window.fechaHoy === 'function') return window.fechaHoy();
+
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  };
+}
+
+if (!window.horaVistaSistema) {
+  window.horaVistaSistema = function(registro){
+    if(!registro) return '';
+    if(registro.hora) return registro.hora;
+
+    var base = registro.timestamp || registro.ts || registro.creado_en || registro.created_at;
+    if(base && typeof window.formatearHora === 'function') return window.formatearHora(base);
+
+    var d = base ? new Date(base) : new Date();
+    return d.toLocaleTimeString('es-SV', {
+      hour:'2-digit',
+      minute:'2-digit',
+      hour12:true
+    });
+  };
+}
+
+if (!window.fechaHoraActualVistaSistema) {
+  window.fechaHoraActualVistaSistema = function(){
+    var ahora = new Date();
+    return window.fechaVistaSistema(ahora) + ' ' + window.horaVistaSistema({timestamp: ahora.toISOString()});
+  };
+}
+
+// Aliases por compatibilidad (llamadas sueltas sin window.)
+// eslint-disable-next-line no-var
+var fechaVistaSistema = window.fechaVistaSistema;
+// eslint-disable-next-line no-var
+var fechaISOActualSistema = window.fechaISOActualSistema;
+// eslint-disable-next-line no-var
+var horaVistaSistema = window.horaVistaSistema;
+// eslint-disable-next-line no-var
+var fechaHoraActualVistaSistema = window.fechaHoraActualVistaSistema;
 
 // ── FUNCIONES DE MANIPULACIÓN DE VALORES ──
 window.n = function(id){ 
@@ -73,8 +197,13 @@ window.parseCsvLine = function(line){
   var result = [], cur = '', inQ = false;
   for(var i = 0; i < line.length; i++){
     var c = line[i];
-    if(c === '"' && (i === 0 || line[i-1] !== ',')){
-      inQ = !inQ;
+    if(c === '"'){
+      if(inQ && line[i + 1] === '"'){
+        cur += '"';
+        i++;
+      } else {
+        inQ = !inQ;
+      }
     }
     else if(c === ',' && !inQ){
       result.push(cur.trim());
