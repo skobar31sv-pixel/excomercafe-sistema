@@ -237,12 +237,12 @@ function renderProductos(){
   body.innerHTML = PRODUCTOS.map(function(p){
     return '<tr data-prod="' + p.key + '">'
       + '<td data-label="Producto">' + p.nombre + '</td>'
-      + '<td data-label="Inventario anterior"><input type="number" min="0" value="0" data-field="anterior" oninput="calcularTotales()"></td>'
+      + '<td data-label="Inv. anterior"><input type="number" min="0" value="0" data-field="anterior" oninput="calcularTotales()"></td>'
       + '<td data-label="Mercaderia nueva"><input type="number" min="0" value="0" data-field="nuevo" oninput="calcularTotales()"></td>'
       + '<td data-label="Venta" class="vendido" data-field="vendido">0</td>'
       + '<td data-label="Faltante"><input type="number" min="0" value="0" data-field="faltante" oninput="calcularTotales()"></td>'
       + '<td data-label="Danado"><input type="number" min="0" value="0" data-field="danado" oninput="calcularTotales()"></td>'
-      + '<td data-label="Inventario final"><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
+      + '<td data-label="Inv. final"><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
       + '<td data-label="Total dinero" class="money-cell dinero" data-field="dinero">$0.00</td>'
       + '</tr>';
   }).join('');
@@ -325,6 +325,96 @@ function imprimirHojaVendedor(){
   window.print();
 }
 
+function firmaCanvas(){
+  return document.getElementById('firma-canvas');
+}
+
+function actualizarFirmaData(){
+  var canvas = firmaCanvas();
+  var input = document.getElementById('firma-data');
+  if(canvas && input) input.value = canvas.toDataURL('image/png');
+}
+
+function limpiarFirma(){
+  var canvas = firmaCanvas();
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  var input = document.getElementById('firma-data');
+  if(input) input.value = '';
+}
+
+function ajustarFirmaCanvas(){
+  var canvas = firmaCanvas();
+  if(!canvas) return;
+  var data = '';
+  try{ data = canvas.toDataURL('image/png'); }catch(e){}
+  var rect = canvas.getBoundingClientRect();
+  var ratio = window.devicePixelRatio || 1;
+  var width = Math.max(320, Math.round(rect.width * ratio));
+  var height = Math.max(120, Math.round(rect.height * ratio));
+  if(canvas.width === width && canvas.height === height) return;
+  canvas.width = width;
+  canvas.height = height;
+  var ctx = canvas.getContext('2d');
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(2, 3 * ratio);
+  ctx.strokeStyle = '#0f172a';
+  if(data){
+    var img = new Image();
+    img.onload = function(){ ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
+    img.src = data;
+  }
+}
+
+function iniciarFirmaDigital(){
+  var canvas = firmaCanvas();
+  if(!canvas) return;
+  ajustarFirmaCanvas();
+  var ctx = canvas.getContext('2d');
+  var drawing = false;
+
+  function point(event){
+    var rect = canvas.getBoundingClientRect();
+    var touch = event.touches && event.touches[0] ? event.touches[0] : event;
+    return {
+      x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+      y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  function start(event){
+    drawing = true;
+    var p = point(event);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    event.preventDefault();
+  }
+
+  function move(event){
+    if(!drawing) return;
+    var p = point(event);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    event.preventDefault();
+  }
+
+  function end(){
+    if(!drawing) return;
+    drawing = false;
+    actualizarFirmaData();
+  }
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive:false });
+  canvas.addEventListener('touchmove', move, { passive:false });
+  canvas.addEventListener('touchend', end);
+  window.addEventListener('resize', ajustarFirmaCanvas);
+}
+
 function leerProductos(){
   var ventasUnidades = {};
   var inventarioInicio = {};
@@ -396,6 +486,7 @@ async function enviarControl(event){
     gastos: gastos,
     remesa: ventas - gastos,
     dineroRemesado: ventas - gastos,
+    firma: document.getElementById('firma-data').value || '',
     observaciones: document.getElementById('observaciones').value.trim(),
     origen: 'portal-agromercado'
   }, productos);
@@ -418,6 +509,7 @@ async function enviarControl(event){
     document.getElementById('sales-form').reset();
     document.getElementById('fecha').value = hoy();
     if(accesoActual) await aplicarEncargadoAgromercado(accesoActual.nombre);
+    limpiarFirma();
     renderProductos();
     calcularTotales();
   }catch(error){
@@ -431,5 +523,6 @@ document.addEventListener('DOMContentLoaded', function(){
   renderProductos();
   var fecha = document.getElementById('fecha');
   if(fecha) fecha.value = hoy();
+  iniciarFirmaDigital();
   restaurarAccesoGuardado();
 });
