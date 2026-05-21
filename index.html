@@ -413,6 +413,8 @@
   .review-pill{border:1px solid var(--border,#dbeafe);border-radius:6px;padding:8px;background:#f8fafc;}
   .review-pill span{display:block;color:var(--muted,#64748b);font-size:.72rem;font-weight:800;text-transform:uppercase;}
   .review-pill b{display:block;margin-top:3px;font-size:.98rem;}
+  .review-bank-select{width:100%;margin-top:5px;border:1px solid var(--border,#cbd5e1);border-radius:6px;background:#fff;padding:7px 8px;font:800 .92rem Barlow,sans-serif;color:var(--ink,#0f172a);outline:none;}
+  .review-bank-select:focus{border-color:#1f6f9f;box-shadow:0 0 0 3px rgba(31,111,159,.16);}
   .review-actions{display:flex;flex-wrap:wrap;gap:8px;}
   .review-detail{margin-top:10px;overflow:auto;}
   .review-detail table{width:100%;min-width:680px;border-collapse:collapse;font-size:.82rem;}
@@ -2993,6 +2995,59 @@ function revisionPayload(row){
   return row && row.payload ? row.payload : {};
 }
 
+function revisionEscapeHtml(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function revisionBancoNombre(nombre){
+  var value = String(nombre || '').trim();
+  if(!value || value === '0') return '';
+  if(window.normalizarNombreBancoReporte) return window.normalizarNombreBancoReporte(value);
+  return value;
+}
+
+function revisionBancosDisponibles(selected){
+  var map = {};
+  function add(nombre){
+    nombre = revisionBancoNombre(nombre);
+    if(nombre) map[nombre.toLowerCase()] = nombre;
+  }
+  ['Banco Agricola','Banco Cuscatlan','Banco Hipotecario','BAC','Banco Promerica'].forEach(add);
+  try {
+    if(window.bancosSistema && typeof bancosSistema.obtenerBancosConDatos === 'function'){
+      bancosSistema.obtenerBancosConDatos().forEach(function(banco){
+        add(typeof banco === 'string' ? banco : banco && banco.nombre);
+      });
+    } else if(window.bancosSistema && typeof bancosSistema.obtenerBancos === 'function'){
+      bancosSistema.obtenerBancos().forEach(add);
+    }
+  } catch(error) {}
+  add(selected);
+  return Object.keys(map).map(function(key){ return map[key]; }).sort();
+}
+
+function revisionBancoSelectHtml(index, selected){
+  selected = revisionBancoNombre(selected);
+  var options = ['<option value="" ' + (!selected ? 'selected' : '') + '>Pendiente / sin banco</option>'];
+  revisionBancosDisponibles(selected).forEach(function(banco){
+    var safe = revisionEscapeHtml(banco);
+    options.push('<option value="' + safe + '" ' + (banco === selected ? 'selected' : '') + '>' + safe + '</option>');
+  });
+  return '<select id="revision-banco-' + index + '" class="review-bank-select" aria-label="Banco del envio">'
+    + options.join('')
+    + '</select>';
+}
+
+function revisionBancoSeleccionado(index, fallback){
+  var select = document.getElementById('revision-banco-' + index);
+  return revisionBancoNombre(select ? select.value : fallback);
+}
+
 function revisionProductosHtml(payload){
   var productos = [
     ['arroz','Arroz'],
@@ -3043,7 +3098,7 @@ function renderVentasPendientes(rows){
       + '<div class="review-pill"><span>Ventas</span><b>' + revisionMoney(row.ventas || payload.ventas) + '</b></div>'
       + '<div class="review-pill"><span>Gastos</span><b>' + revisionMoney(row.gastos || payload.gastos) + '</b></div>'
       + '<div class="review-pill"><span>Remesa</span><b>' + revisionMoney(row.remesa || payload.remesa) + '</b></div>'
-      + '<div class="review-pill"><span>Banco</span><b>' + (payload.banco || 'Pendiente') + '</b></div>'
+      + '<div class="review-pill"><span>Banco</span>' + revisionBancoSelectHtml(index, payload.banco || row.banco || '') + '</div>'
       + '</div>'
       + revisionProductosHtml(payload)
       + '<div class="review-actions">'
@@ -3072,6 +3127,7 @@ window.aprobarVentaPendiente = async function(index){
   var row = window.ventasPendientesCache[index];
   if(!row || !confirm('Aprobar este envío y pasarlo al reporte oficial?')) return;
   var payload = Object.assign({}, revisionPayload(row));
+  payload.banco = revisionBancoSeleccionado(index, payload.banco || row.banco || '');
   payload.id = payload.id || row.local_id || ('aprobado-' + Date.now());
   payload.local_id = payload.local_id || payload.id;
   var originalUnits = payload.ventas_unidades || {};
@@ -3114,7 +3170,7 @@ window.aprobarVentaPendiente = async function(index){
     await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?id=eq.' + encodeURIComponent(row.id), {
       method:'PATCH',
       prefer:'return=minimal',
-      body:{ estado:'aprobado', revisado_por: authUserNameFromSession(window.authSession), revisado_en: new Date().toISOString() }
+      body:{ estado:'aprobado', revisado_por: authUserNameFromSession(window.authSession), revisado_en: new Date().toISOString(), payload: payload }
     });
     var hist = [];
     try { hist = JSON.parse(localStorage.getItem('exc_agro_hist') || '[]'); } catch(error) {}
