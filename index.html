@@ -816,8 +816,6 @@
   </div>
   <div class="chat-user-row">
     <div class="chat-user-current" id="chat-current-user">Usuario: Usuario</div>
-    <input type="text" id="chat-username" placeholder="Tu nombre" maxlength="40">
-    <button type="button" onclick="guardarChatUsuario()">Usar</button>
   </div>
   <div class="chat-presence" id="chat-presence">Conectados: 0</div>
   <div class="chat-target-row">
@@ -2632,7 +2630,6 @@ function aplicarSesionAuth(session){
   window.presenceRlsBlocked = false;
   if(typeof actualizarChatClientIdSesion === 'function') actualizarChatClientIdSesion();
   var nombre = authUserNameFromSession(session);
-  localStorage.setItem('chat_username', nombre);
   var badge = document.getElementById('auth-user-badge');
   if(badge) badge.textContent = nombre;
   var overlay = document.getElementById('auth-overlay');
@@ -2778,7 +2775,6 @@ window.crearUsuarioSistema = async function(event){
 window.logoutUsuarioSistema = function(){
   guardarSesionAuth(null);
   localStorage.removeItem(window.AUTH_REMEMBER_KEY);
-  localStorage.removeItem('chat_username');
   var overlay = document.getElementById('auth-overlay');
   if(overlay) overlay.classList.remove('auth-hidden');
   var pass = document.getElementById('login-password');
@@ -3167,7 +3163,7 @@ actualizarChatClientIdSesion();
 
 function chatName(){
   if(window.authSession) return authUserNameFromSession(window.authSession);
-  return (localStorage.getItem('chat_username') || '').trim() || 'Usuario';
+  return 'Usuario';
 }
 
 window.nombreUsuarioActual = function(){
@@ -3426,19 +3422,7 @@ window.toggleChatPanel = function(){
   panel.classList.toggle('open');
   document.querySelector('.hbtn-chat')?.classList.remove('new-message');
   actualizarUsuarioActualUI();
-  var input = document.getElementById('chat-username');
-  if(input) input.value = chatName() === 'Usuario' ? '' : chatName();
   if(panel.classList.contains('open')) cargarChatOnline();
-};
-
-window.guardarChatUsuario = function(){
-  var input = document.getElementById('chat-username');
-  var nombre = (input && input.value || '').trim();
-  if(!nombre) nombre = 'Usuario';
-  localStorage.setItem('chat_username', nombre);
-  actualizarUsuarioActualUI();
-  registrarPresenciaOnline();
-  if(typeof showToast === 'function') showToast('Usuario de chat: ' + nombre);
 };
 
 async function registrarPresenciaOnline(){
@@ -3639,8 +3623,6 @@ window.borrarTodosChat = async function(){
 };
 
 document.addEventListener('DOMContentLoaded', function(){
-  var input = document.getElementById('chat-username');
-  if(input) input.value = chatName() === 'Usuario' ? '' : chatName();
   actualizarUsuarioActualUI();
   if(window.haySesionSupabase && window.haySesionSupabase()){
     registrarPresenciaOnline();
@@ -5649,8 +5631,9 @@ function backupNowParts(){
 function backupUsuarioActualNombre(){
   try{
     if(window.usuarioActual && window.usuarioActual.nombre) return String(window.usuarioActual.nombre);
+    if(window.authSession) return authUserNameFromSession(window.authSession);
   }catch(e){}
-  return (localStorage.getItem('chat_username') || '').trim() || 'Jorge Escobar';
+  return 'Jorge Escobar';
 }
 
 function backupPermiteAccionAdmin(){
