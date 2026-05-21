@@ -82,6 +82,7 @@ var PRODUCTOS = [
 ];
 
 var accesoActual = null;
+var ACCESS_STORAGE_KEY = 'agromercado_portal_access_v1';
 
 function palabraClave(nombre){
   var ignorar = { EL:true, LA:true, LAS:true, LOS:true, DE:true, DEL:true, BO:true, BARRIO:true, PARQUE:true };
@@ -199,6 +200,29 @@ function setMessage(id, text, type){
   el.className = 'message ' + (type || '');
 }
 
+function guardarAccesoPortal(agromercado, clave){
+  try{
+    localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify({
+      agromercado: agromercado || '',
+      clave: clave || '',
+      guardado_en: new Date().toISOString()
+    }));
+  }catch(e){}
+}
+
+function leerAccesoPortal(){
+  try{
+    var data = JSON.parse(localStorage.getItem(ACCESS_STORAGE_KEY) || 'null');
+    return data && data.agromercado && data.clave ? data : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function limpiarAccesoPortal(){
+  try{ localStorage.removeItem(ACCESS_STORAGE_KEY); }catch(e){}
+}
+
 function llenarAgromercados(){
   var select = document.getElementById('access-agromercado');
   if(!select) return;
@@ -212,15 +236,14 @@ function renderProductos(){
   if(!body) return;
   body.innerHTML = PRODUCTOS.map(function(p){
     return '<tr data-prod="' + p.key + '">'
-      + '<td>' + p.nombre + '</td>'
-      + '<td class="money-cell">' + money(p.precio) + '</td>'
-      + '<td><input type="number" min="0" value="0" data-field="anterior" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="nuevo" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="apartado" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="danado" oninput="calcularTotales()"></td>'
-      + '<td class="vendido" data-field="vendido">0</td>'
-      + '<td class="money-cell dinero" data-field="dinero">$0.00</td>'
+      + '<td data-label="Producto">' + p.nombre + '</td>'
+      + '<td data-label="Inventario anterior"><input type="number" min="0" value="0" data-field="anterior" oninput="calcularTotales()"></td>'
+      + '<td data-label="Mercaderia nueva"><input type="number" min="0" value="0" data-field="nuevo" oninput="calcularTotales()"></td>'
+      + '<td data-label="Venta" class="vendido" data-field="vendido">0</td>'
+      + '<td data-label="Faltante"><input type="number" min="0" value="0" data-field="faltante" oninput="calcularTotales()"></td>'
+      + '<td data-label="Danado"><input type="number" min="0" value="0" data-field="danado" oninput="calcularTotales()"></td>'
+      + '<td data-label="Inventario final"><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
+      + '<td data-label="Total dinero" class="money-cell dinero" data-field="dinero">$0.00</td>'
       + '</tr>';
   }).join('');
 }
@@ -234,9 +257,9 @@ function calcularProducto(row, prod){
   var vendido = Math.max(0,
     rowValue(row, 'anterior')
     + rowValue(row, 'nuevo')
-    - rowValue(row, 'final')
-    - rowValue(row, 'apartado')
+    - rowValue(row, 'faltante')
     - rowValue(row, 'danado')
+    - rowValue(row, 'final')
   );
   var dinero = vendido * prod.precio;
   row.querySelector('.vendido').textContent = vendido;
@@ -265,9 +288,11 @@ async function validarAcceso(){
   });
   if(!match){
     setMessage('access-message', 'Clave o agromercado incorrecto.', 'error');
+    limpiarAccesoPortal();
     return;
   }
   accesoActual = match;
+  guardarAccesoPortal(agromercado, clave);
   document.getElementById('access-panel').classList.add('hidden');
   document.getElementById('sales-form').classList.remove('hidden');
   document.getElementById('agromercado-label').textContent = match.nombre;
@@ -278,9 +303,26 @@ async function validarAcceso(){
 
 function salirPortal(){
   accesoActual = null;
+  limpiarAccesoPortal();
   document.getElementById('sales-form').classList.add('hidden');
   document.getElementById('access-panel').classList.remove('hidden');
   document.getElementById('access-clave').value = '';
+}
+
+async function restaurarAccesoGuardado(){
+  var access = leerAccesoPortal();
+  if(!access) return;
+  var agroEl = document.getElementById('access-agromercado');
+  var claveEl = document.getElementById('access-clave');
+  if(!agroEl || !claveEl) return;
+  agroEl.value = access.agromercado;
+  claveEl.value = access.clave;
+  await validarAcceso();
+}
+
+function imprimirHojaVendedor(){
+  calcularTotales();
+  window.print();
 }
 
 function leerProductos(){
@@ -288,7 +330,7 @@ function leerProductos(){
   var inventarioInicio = {};
   var inventarioNuevo = {};
   var inventarioFinal = {};
-  var apartado = {};
+  var faltante = {};
   var danado = {};
   var dineroProductos = {};
 
@@ -299,7 +341,7 @@ function leerProductos(){
     inventarioInicio[prod.key] = rowValue(row, 'anterior');
     inventarioNuevo[prod.key] = rowValue(row, 'nuevo');
     inventarioFinal[prod.key] = rowValue(row, 'final');
-    apartado[prod.key] = rowValue(row, 'apartado');
+    faltante[prod.key] = rowValue(row, 'faltante');
     danado[prod.key] = rowValue(row, 'danado');
     dineroProductos[prod.key] = calc.dinero;
   });
@@ -309,7 +351,8 @@ function leerProductos(){
     inventario_inicio: inventarioInicio,
     mercaderia_nueva: inventarioNuevo,
     inventario_final: inventarioFinal,
-    apartado: apartado,
+    faltante: faltante,
+    apartado: faltante,
     danado: danado,
     dinero_productos: dineroProductos
   };
@@ -374,6 +417,7 @@ async function enviarControl(event){
     setMessage('submit-message', 'Enviado. Queda pendiente de revision.', 'ok');
     document.getElementById('sales-form').reset();
     document.getElementById('fecha').value = hoy();
+    if(accesoActual) await aplicarEncargadoAgromercado(accesoActual.nombre);
     renderProductos();
     calcularTotales();
   }catch(error){
@@ -387,4 +431,5 @@ document.addEventListener('DOMContentLoaded', function(){
   renderProductos();
   var fecha = document.getElementById('fecha');
   if(fecha) fecha.value = hoy();
+  restaurarAccesoGuardado();
 });

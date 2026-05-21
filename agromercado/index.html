@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EXCOMERCAFE - Control Agromercado</title>
   <link rel="icon" href="../favicon.ico">
-  <link rel="stylesheet" href="./styles.css?v=20260521-portal-v5">
+  <link rel="stylesheet" href="./styles.css?v=20260521-portal-v7">
 </head>
 <body>
   <main class="portal-shell">
@@ -42,14 +42,15 @@
             <span id="agromercado-label">Agromercado</span>
             <h2>Hoja digital del vendedor</h2>
           </div>
-          <button type="button" class="ghost" onclick="salirPortal()">Cambiar</button>
+          <div class="form-actions">
+            <button type="button" class="ghost" onclick="imprimirHojaVendedor()">Imprimir / PDF</button>
+            <button type="button" class="ghost" onclick="salirPortal()">Cambiar</button>
+          </div>
         </div>
 
         <div class="form-grid compact">
           <label>Fecha<input id="fecha" type="date" readonly></label>
           <label>Encargado<input id="encargado" type="text" maxlength="80" placeholder="Nombre del encargado" required></label>
-          <label>Banco<select id="banco"><option value="">Pendiente</option><option>Agricola</option><option>Cuscatlan</option><option>Hipotecario</option><option>BAC</option><option>Promerica</option></select></label>
-          <label>Gastos<input id="gastos" type="number" min="0" step="0.01" value="0" oninput="calcularTotales()"></label>
         </div>
       </section>
 
@@ -60,18 +61,24 @@
             <thead>
               <tr>
                 <th>Producto</th>
-                <th>Precio</th>
                 <th>Inventario anterior</th>
-                <th>Mercadería nueva</th>
-                <th>Inventario final</th>
-                <th>Apartado</th>
+                <th>Mercaderia nueva</th>
+                <th>Venta</th>
+                <th>Faltante</th>
                 <th>Dañado</th>
-                <th>Vendido</th>
-                <th>Dinero</th>
+                <th>Inventario final</th>
+                <th>Total dinero</th>
               </tr>
             </thead>
             <tbody id="productos-body"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="form-card payment-card">
+        <div class="form-grid compact">
+          <label>Banco<select id="banco"><option value="">Pendiente</option><option>Agricola</option><option>Cuscatlan</option><option>Hipotecario</option><option>BAC</option><option>Promerica</option></select></label>
+          <label>Gastos<input id="gastos" type="number" min="0" step="0.01" value="0" oninput="calcularTotales()"></label>
         </div>
       </section>
 
@@ -89,6 +96,6 @@
     </form>
   </main>
 
-  <script src="./app.js?v=20260521-portal-v5"></script>
+  <script src="./app.js?v=20260521-portal-v7"></script>
 </body>
 </html>

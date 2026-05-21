@@ -85,6 +85,13 @@ h2{
   margin-bottom:14px;
 }
 
+.form-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
 .form-card-head span{
   color:var(--muted);
   font-size:.78rem;
@@ -246,9 +253,135 @@ button{
 }
 
 @media(max-width:720px){
+  .portal-shell{
+    width:100%;
+    padding:0 0 22px;
+  }
+
   .portal-head{
     align-items:flex-start;
     flex-direction:column;
+    border-radius:0;
+    padding:14px;
+  }
+
+  .portal-head h1{
+    font-size:1.1rem;
+  }
+
+  .access-panel,
+  .form-card,
+  .totals{
+    margin:10px 8px 0;
+    border-radius:8px;
+  }
+
+  .form-card,
+  .access-panel{
+    padding:12px;
+  }
+
+  .form-card-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .form-actions{
+    width:100%;
+  }
+
+  .form-actions .ghost{
+    flex:1;
+  }
+
+  .form-grid,
+  .form-grid.compact{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  input,
+  select,
+  textarea,
+  button{
+    min-height:48px;
+    font-size:1rem;
+  }
+
+  .table-wrap{
+    overflow:visible;
+  }
+
+  .sales-table{
+    min-width:0;
+    border-collapse:separate;
+    border-spacing:0 10px;
+  }
+
+  .sales-table thead{
+    display:none;
+  }
+
+  .sales-table,
+  .sales-table tbody,
+  .sales-table tr,
+  .sales-table td{
+    display:block;
+    width:100%;
+  }
+
+  .sales-table tr{
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .sales-table td{
+    display:grid;
+    grid-template-columns:minmax(118px, 42%) 1fr;
+    align-items:center;
+    gap:10px;
+    border:0;
+    border-bottom:1px solid var(--border);
+    text-align:right;
+    padding:9px 10px;
+  }
+
+  .sales-table td::before{
+    content:attr(data-label);
+    text-align:left;
+    color:#334155;
+    font-size:.8rem;
+    font-weight:900;
+  }
+
+  .sales-table td:first-child{
+    display:block;
+    min-width:0;
+    text-align:left;
+    background:var(--brand);
+    color:#fff;
+    padding:10px 12px;
+  }
+
+  .sales-table td:first-child::before{
+    display:none;
+  }
+
+  .sales-table td:last-child{
+    border-bottom:none;
+  }
+
+  .sales-table input{
+    min-height:44px;
+    max-width:150px;
+    justify-self:end;
+  }
+
+  .money-cell,
+  .vendido{
+    font-size:1rem;
   }
 
   .totals{
@@ -258,5 +391,53 @@ button{
   .totals div{
     border-right:none;
     border-bottom:1px solid var(--border);
+  }
+}
+
+@media print{
+  body{
+    background:#fff;
+  }
+
+  .portal-shell{
+    width:100%;
+    padding:0;
+  }
+
+  .access-panel,
+  .form-actions,
+  .primary,
+  .ghost{
+    display:none !important;
+  }
+
+  .portal-head,
+  .form-card,
+  .totals{
+    box-shadow:none;
+    break-inside:avoid;
+  }
+
+  .portal-head{
+    border-radius:0;
+  }
+
+  .sales-table{
+    min-width:0;
+    font-size:.75rem;
+  }
+
+  .sales-table th,
+  .sales-table td{
+    padding:5px;
+  }
+
+  input,
+  select,
+  textarea{
+    border:0;
+    background:#fff;
+    padding:0;
+    min-height:0;
   }
 }
