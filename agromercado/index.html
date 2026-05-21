@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EXCOMERCAFE - Control Agromercado</title>
   <link rel="icon" href="../favicon.ico">
-  <link rel="stylesheet" href="./styles.css?v=20260521-portal-v13">
+  <link rel="stylesheet" href="./styles.css?v=20260521-portal-v14">
 </head>
 <body>
   <main class="portal-shell">
@@ -93,9 +93,21 @@
         <button class="primary wide" type="submit">Enviar para revisión</button>
         <p class="message" id="submit-message"></p>
       </section>
+
+      <section class="form-card history-card">
+        <details id="historial-ventas-panel">
+          <summary>
+            <span>Historial de ventas</span>
+            <small id="historial-status">Cargando...</small>
+          </summary>
+          <div id="historial-ventas" class="history-list">
+            <div class="history-empty">Sin historial cargado.</div>
+          </div>
+        </details>
+      </section>
     </form>
   </main>
 
-  <script src="./app.js?v=20260521-portal-v13"></script>
+  <script src="./app.js?v=20260521-portal-v14"></script>
 </body>
 </html>

@@ -384,6 +384,7 @@ async function validarAcceso(){
   await aplicarEncargadoAgromercado(match.nombre);
   await cargarValoresInicialesAgromercado(match.nombre);
   calcularTotales();
+  await cargarHistorialVentas(match.nombre);
   await revisarBloqueoPendiente(match.nombre);
 }
 
@@ -522,6 +523,117 @@ async function fetchSupabase(path){
   });
   if(!response.ok) return null;
   return response.json();
+}
+
+function payloadHistorial(row){
+  if(!row) return {};
+  if(row.payload && typeof row.payload === 'object') return row.payload;
+  if(row.payload && typeof row.payload === 'string'){
+    try{ return JSON.parse(row.payload); }catch(e){ return {}; }
+  }
+  return {};
+}
+
+function historialMapValue(map, key){
+  if(!map) return 0;
+  var aliases = {
+    arroz:['arroz','ab1'],
+    precocido:['precocido','ap1'],
+    frijol1:['frijol1','fr1'],
+    frijol4:['frijol4','fr4'],
+    aceite:['aceite','ac'],
+    harina:['harina','ha']
+  };
+  var keys = aliases[key] || [key];
+  for(var i = 0; i < keys.length; i++){
+    if(map[keys[i]] != null) return n(map[keys[i]]);
+  }
+  return 0;
+}
+
+function historialProductosHtml(payload, row){
+  var unidades = payload.ventas_unidades || {};
+  var inicio = payload.inventario_inicio || {};
+  var nuevo = payload.mercaderia_nueva || {};
+  var final = payload.inventario_final || {};
+  var faltante = payload.faltante || payload.apartado || {};
+  var danado = payload.danado || {};
+  var dinero = payload.dinero_productos || {};
+  return '<div class="history-table-wrap"><table class="history-table"><thead><tr>'
+    + '<th>Producto</th><th>Anterior</th><th>Nueva</th><th>Venta</th><th>Faltante</th><th>Danado</th><th>Final</th><th>Dinero</th>'
+    + '</tr></thead><tbody>'
+    + PRODUCTOS.map(function(prod){
+      var vendido = historialMapValue(unidades, prod.key);
+      var dineroProducto = dinero && dinero[prod.key] != null ? n(dinero[prod.key]) : vendido * prod.precio;
+      return '<tr>'
+        + '<td>' + htmlEscape(prod.nombre) + '</td>'
+        + '<td>' + historialMapValue(inicio, prod.key) + '</td>'
+        + '<td>' + historialMapValue(nuevo, prod.key) + '</td>'
+        + '<td>' + vendido + '</td>'
+        + '<td>' + historialMapValue(faltante, prod.key) + '</td>'
+        + '<td>' + historialMapValue(danado, prod.key) + '</td>'
+        + '<td>' + historialMapValue(final, prod.key) + '</td>'
+        + '<td>' + money(dineroProducto) + '</td>'
+        + '</tr>';
+    }).join('')
+    + '</tbody></table></div>';
+}
+
+function renderHistorialVentas(rows){
+  var cont = document.getElementById('historial-ventas');
+  var status = document.getElementById('historial-status');
+  if(status) status.textContent = (rows || []).length ? (rows.length + ' reporte(s)') : 'Sin reportes';
+  if(!cont) return;
+  if(!rows || !rows.length){
+    cont.innerHTML = '<div class="history-empty">No hay ventas registradas todavia para este agromercado.</div>';
+    return;
+  }
+  cont.innerHTML = rows.map(function(row){
+    var payload = payloadHistorial(row);
+    var estado = String(row.estado || 'aprobado').toLowerCase();
+    var banco = payload.banco || row.banco || 'Pendiente';
+    var ventas = row.ventas != null ? row.ventas : payload.ventas;
+    var gastos = row.gastos != null ? row.gastos : payload.gastos;
+    var remesa = row.remesa != null ? row.remesa : payload.remesa;
+    var obs = payload.observaciones || row.observaciones || '';
+    return '<article class="history-item">'
+      + '<div class="history-head"><div><strong>' + htmlEscape(fechaVista(row.fecha || payload.fecha || '')) + '</strong>'
+      + '<small>Encargado: ' + htmlEscape(row.encargado || payload.encargado || 'Sin nombre') + '</small></div>'
+      + '<span class="history-status ' + htmlEscape(estado) + '">' + htmlEscape(estado) + '</span></div>'
+      + '<div class="history-metrics">'
+      + '<div><span>Ventas</span><b>' + money(ventas) + '</b></div>'
+      + '<div><span>Gastos</span><b>' + money(gastos) + '</b></div>'
+      + '<div><span>Remesa</span><b>' + money(remesa) + '</b></div>'
+      + '<div><span>Banco</span><b>' + htmlEscape(banco) + '</b></div>'
+      + '</div>'
+      + historialProductosHtml(payload, row)
+      + '<div class="history-obs"><b>Observaciones:</b> ' + htmlEscape(obs || 'Sin observaciones') + '</div>'
+      + '</article>';
+  }).join('');
+}
+
+async function cargarHistorialVentas(agromercado){
+  var status = document.getElementById('historial-status');
+  if(status) status.textContent = 'Cargando...';
+  try{
+    var official = await fetchSupabase('/rest/v1/ventas_agromercado?select=fecha,agromercado,encargado,ventas,gastos,remesa,banco,observaciones,payload,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&order=fecha.desc,creado_en.desc&limit=50');
+    var pending = await fetchSupabase('/rest/v1/ventas_agromercado_pendientes?select=fecha,agromercado,encargado,estado,ventas,gastos,remesa,payload,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&order=creado_en.desc&limit=50');
+    var rows = [];
+    (official || []).forEach(function(row){
+      rows.push(Object.assign({ estado:'aprobado', historial_tipo:'oficial' }, row));
+    });
+    (pending || []).forEach(function(row){
+      rows.push(Object.assign({ historial_tipo:'revision' }, row));
+    });
+    rows.sort(function(a, b){
+      return String(b.fecha || '').localeCompare(String(a.fecha || '')) || String(b.creado_en || '').localeCompare(String(a.creado_en || ''));
+    });
+    renderHistorialVentas(rows.slice(0, 50));
+  }catch(error){
+    if(status) status.textContent = 'Error';
+    var cont = document.getElementById('historial-ventas');
+    if(cont) cont.innerHTML = '<div class="history-empty">No se pudo cargar el historial.</div>';
+  }
 }
 
 async function cargarValoresInicialesRpc(agromercado, fecha){
@@ -671,6 +783,7 @@ async function enviarControl(event){
     guardarPendienteLocal(accesoActual.nombre);
     setHojaBloqueada(true, { fecha: payload.fecha });
     calcularTotales();
+    await cargarHistorialVentas(accesoActual.nombre);
   }catch(error){
     setMessage('submit-message', 'No se pudo enviar: ' + error.message, 'error');
   }
