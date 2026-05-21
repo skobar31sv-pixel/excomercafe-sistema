@@ -92,6 +92,8 @@ var PRODUCTO_COLUMNAS = {
 
 var accesoActual = null;
 var ACCESS_STORAGE_KEY = 'agromercado_portal_access_v1';
+var PENDING_STORAGE_KEY = 'agromercado_portal_pending_v1';
+var hojaBloqueada = false;
 
 function palabraClave(nombre){
   var ignorar = { EL:true, LA:true, LAS:true, LOS:true, DE:true, DEL:true, BO:true, BARRIO:true, PARQUE:true };
@@ -240,6 +242,45 @@ function limpiarAccesoPortal(){
   try{ localStorage.removeItem(ACCESS_STORAGE_KEY); }catch(e){}
 }
 
+function guardarPendienteLocal(agromercado){
+  try{
+    localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify({
+      agromercado: agromercado || '',
+      fecha: hoy(),
+      guardado_en: new Date().toISOString()
+    }));
+  }catch(e){}
+}
+
+function leerPendienteLocal(agromercado){
+  try{
+    var data = JSON.parse(localStorage.getItem(PENDING_STORAGE_KEY) || 'null');
+    return data && data.agromercado === agromercado ? data : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function limpiarPendienteLocal(){
+  try{ localStorage.removeItem(PENDING_STORAGE_KEY); }catch(e){}
+}
+
+function setHojaBloqueada(locked, info){
+  hojaBloqueada = !!locked;
+  var form = document.getElementById('sales-form');
+  if(form) form.classList.toggle('is-locked', hojaBloqueada);
+  document.querySelectorAll('#sales-form input, #sales-form select, #sales-form textarea').forEach(function(el){
+    el.disabled = hojaBloqueada;
+  });
+  document.querySelectorAll('#sales-form button.primary').forEach(function(btn){
+    btn.disabled = hojaBloqueada;
+  });
+  if(hojaBloqueada){
+    var fecha = info && info.fecha ? (' del ' + fechaVista(info.fecha)) : '';
+    setMessage('submit-message', 'Reporte enviado y pendiente de revision' + fecha + '. No se puede editar ni enviar otro hasta que sea aprobado o rechazado.', 'ok');
+  }
+}
+
 function llenarAgromercados(){
   var select = document.getElementById('access-agromercado');
   if(!select) return;
@@ -317,6 +358,7 @@ async function validarAcceso(){
   await aplicarEncargadoAgromercado(match.nombre);
   await cargarValoresInicialesAgromercado(match.nombre);
   calcularTotales();
+  await revisarBloqueoPendiente(match.nombre);
 }
 
 function salirPortal(){
@@ -340,7 +382,97 @@ async function restaurarAccesoGuardado(){
 
 function imprimirHojaVendedor(){
   calcularTotales();
-  window.print();
+  var win = window.open('', '_blank');
+  if(!win){
+    window.print();
+    return;
+  }
+  win.document.write(buildPrintHtml());
+  win.document.close();
+}
+
+function htmlEscape(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function buildPrintHtml(){
+  var fecha = document.getElementById('fecha') ? document.getElementById('fecha').value : hoy();
+  var encargado = document.getElementById('encargado') ? document.getElementById('encargado').value : '';
+  var banco = document.getElementById('banco') ? document.getElementById('banco').value : '';
+  var gastos = n(document.getElementById('gastos') && document.getElementById('gastos').value);
+  var observaciones = document.getElementById('observaciones') ? document.getElementById('observaciones').value : '';
+  var rows = PRODUCTOS.map(function(prod){
+    var row = document.querySelector('tr[data-prod="' + prod.key + '"]');
+    return '<tr>'
+      + '<td>' + htmlEscape(prod.nombre) + '</td>'
+      + '<td>' + rowValue(row, 'anterior') + '</td>'
+      + '<td>' + rowValue(row, 'nuevo') + '</td>'
+      + '<td>' + rowValue(row, 'venta') + '</td>'
+      + '<td>' + rowValue(row, 'faltante') + '</td>'
+      + '<td>' + rowValue(row, 'danado') + '</td>'
+      + '<td>' + rowValue(row, 'final') + '</td>'
+      + '<td>' + htmlEscape(row ? row.querySelector('.dinero').textContent : '$0.00') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  return '<!doctype html><html><head><meta charset="utf-8"><title>Hoja digital del vendedor</title>'
+    + '<style>'
+    + '@page{size:letter;margin:0.32in;}'
+    + '*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10px;}'
+    + '.head{display:flex;justify-content:space-between;align-items:flex-start;background:#17456b;color:#fff;padding:10px 12px;margin-bottom:8px;}'
+    + '.head span{display:block;font-size:9px;font-weight:700;letter-spacing:.08em}.head h1{margin:2px 0 0;font-size:17px;line-height:1.05}.date{font-size:12px;font-weight:700;}'
+    + '.meta{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px}.box{border:1px solid #999;padding:5px;min-height:28px}.box b{display:block;font-size:8px;text-transform:uppercase;color:#444;margin-bottom:2px;}'
+    + 'table{width:100%;border-collapse:collapse;font-size:9px;}th{background:#e8eef5;}th,td{border:1px solid #777;padding:4px;text-align:center;}td:first-child{text-align:left;font-weight:700;}'
+    + '.totals{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #777;border-top:0;margin-bottom:8px}.totals div{padding:6px;border-right:1px solid #777}.totals div:last-child{border-right:0}.totals b{display:block;font-size:8px;color:#444}.totals strong{font-size:16px;}'
+    + '.obs{border:1px solid #999;min-height:44px;padding:5px;white-space:pre-wrap}.actions{margin-top:8px;text-align:center}@media print{.actions{display:none}}'
+    + '</style></head><body>'
+    + '<div class="head"><div><span>EXCOMERCAFE</span><h1>Control de venta en agro-mercado</h1></div><div class="date">' + htmlEscape(fechaVista(fecha)) + '</div></div>'
+    + '<div class="meta">'
+    + '<div class="box"><b>Agromercado</b>' + htmlEscape(accesoActual ? accesoActual.nombre : '') + '</div>'
+    + '<div class="box"><b>Encargado</b>' + htmlEscape(encargado) + '</div>'
+    + '<div class="box"><b>Banco</b>' + htmlEscape(banco || 'Pendiente') + '</div>'
+    + '<div class="box"><b>Gastos</b>' + money(gastos) + '</div>'
+    + '</div>'
+    + '<table><thead><tr><th>Producto</th><th>Inv. ant.</th><th>Merc. nueva</th><th>Venta</th><th>Faltante</th><th>Danado</th><th>Inv. final</th><th>Total dinero</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<div class="totals"><div><b>Ventas</b><strong>' + htmlEscape(document.getElementById('total-ventas').textContent) + '</strong></div><div><b>Gastos</b><strong>' + htmlEscape(document.getElementById('total-gastos').textContent) + '</strong></div><div><b>Remesa</b><strong>' + htmlEscape(document.getElementById('total-remesa').textContent) + '</strong></div></div>'
+    + '<div class="box"><b>Observaciones</b><div class="obs">' + htmlEscape(observaciones) + '</div></div>'
+    + '<div class="actions"><button onclick="window.print()">Imprimir</button></div>'
+    + '<script>window.onload=function(){setTimeout(function(){window.print();},150)};<\/script>'
+    + '</body></html>';
+}
+
+async function revisarBloqueoPendiente(agromercado){
+  setHojaBloqueada(false);
+  var local = leerPendienteLocal(agromercado);
+  try{
+    var response = await fetch(SUPABASE_CONFIG.url + '/rest/v1/rpc/portal_agromercado_pendiente', {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_CONFIG.key,
+        Authorization: 'Bearer ' + SUPABASE_CONFIG.key,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_agromercado: agromercado })
+    });
+    if(response.ok){
+      var rows = await response.json();
+      var info = rows && rows[0] ? rows[0] : null;
+      if(info && info.pendiente){
+        guardarPendienteLocal(agromercado);
+        setHojaBloqueada(true, info);
+      }else{
+        limpiarPendienteLocal();
+      }
+      return;
+    }
+  }catch(e){}
+
+  if(local) setHojaBloqueada(true, local);
 }
 
 function productoValueFromPayload(map, key){
@@ -469,6 +601,10 @@ async function supabaseInsert(row){
 async function enviarControl(event){
   event.preventDefault();
   if(!accesoActual) return;
+  if(hojaBloqueada){
+    setMessage('submit-message', 'Ya existe un reporte pendiente de revision para este agromercado.', 'error');
+    return;
+  }
   setMessage('submit-message', 'Enviando...', '');
   calcularTotales();
   var productos = leerProductos();
@@ -505,12 +641,8 @@ async function enviarControl(event){
 
   try{
     await supabaseInsert(row);
-    setMessage('submit-message', 'Enviado. Queda pendiente de revision.', 'ok');
-    document.getElementById('sales-form').reset();
-    document.getElementById('fecha').value = hoy();
-    if(accesoActual) await aplicarEncargadoAgromercado(accesoActual.nombre);
-    renderProductos();
-    if(accesoActual) await cargarValoresInicialesAgromercado(accesoActual.nombre);
+    guardarPendienteLocal(accesoActual.nombre);
+    setHojaBloqueada(true, { fecha: payload.fecha });
     calcularTotales();
   }catch(error){
     setMessage('submit-message', 'No se pudo enviar: ' + error.message, 'error');

@@ -175,6 +175,18 @@ button.small{
   display:none;
 }
 
+.sales-form.is-locked input,
+.sales-form.is-locked select,
+.sales-form.is-locked textarea{
+  background:#eef4fb;
+  color:#475569;
+}
+
+.sales-form.is-locked button.primary{
+  background:#94a3b8;
+  cursor:not-allowed;
+}
+
 .message{
   margin:10px 0 0;
   color:var(--muted);
@@ -449,12 +461,12 @@ button.small{
 
   .sales-table{
     min-width:0;
-    font-size:.75rem;
+    font-size:.68rem;
   }
 
   .sales-table th,
   .sales-table td{
-    padding:5px;
+    padding:3px;
   }
 
   input,
