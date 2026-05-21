@@ -81,6 +81,15 @@ var PRODUCTOS = [
   { key:'harina', nombre:'Harina de maiz 820 grs', precio:1.10 }
 ];
 
+var PRODUCTO_COLUMNAS = {
+  arroz: 'arroz',
+  precocido: 'arroz_precocido',
+  frijol1: 'frijol_1lb',
+  frijol4: 'frijol_4lb',
+  aceite: 'aceite_750ml',
+  harina: 'harina_820grs'
+};
+
 var accesoActual = null;
 var ACCESS_STORAGE_KEY = 'agromercado_portal_access_v1';
 
@@ -123,6 +132,14 @@ function n(value){
 
 function money(value){
   return '$' + n(value).toFixed(2);
+}
+
+function clearZero(input){
+  if(input && String(input.value) === '0') input.value = '';
+}
+
+function restoreZero(input){
+  if(input && String(input.value).trim() === '') input.value = '0';
 }
 
 function normalizarTexto(value){
@@ -237,12 +254,12 @@ function renderProductos(){
   body.innerHTML = PRODUCTOS.map(function(p){
     return '<tr data-prod="' + p.key + '">'
       + '<td data-label="Producto">' + p.nombre + '</td>'
-      + '<td data-label="Inv. anterior"><input type="number" min="0" value="0" data-field="anterior" oninput="calcularTotales()"></td>'
-      + '<td data-label="Mercaderia nueva"><input type="number" min="0" value="0" data-field="nuevo" oninput="calcularTotales()"></td>'
-      + '<td data-label="Venta" class="vendido" data-field="vendido">0</td>'
-      + '<td data-label="Faltante"><input type="number" min="0" value="0" data-field="faltante" oninput="calcularTotales()"></td>'
-      + '<td data-label="Danado"><input type="number" min="0" value="0" data-field="danado" oninput="calcularTotales()"></td>'
-      + '<td data-label="Inv. final"><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
+      + '<td data-label="Inv. anterior"><input class="readonly-field" type="number" value="0" data-field="anterior" readonly></td>'
+      + '<td data-label="Mercaderia nueva"><input class="readonly-field" type="number" value="0" data-field="nuevo" readonly></td>'
+      + '<td data-label="Venta"><input type="number" min="0" value="0" data-field="venta" inputmode="numeric" onfocus="clearZero(this)" onblur="restoreZero(this);calcularTotales()" oninput="calcularTotales()"></td>'
+      + '<td data-label="Faltante"><input type="number" min="0" value="0" data-field="faltante" inputmode="numeric" onfocus="clearZero(this)" onblur="restoreZero(this);calcularTotales()" oninput="calcularTotales()"></td>'
+      + '<td data-label="Danado"><input type="number" min="0" value="0" data-field="danado" inputmode="numeric" onfocus="clearZero(this)" onblur="restoreZero(this);calcularTotales()" oninput="calcularTotales()"></td>'
+      + '<td data-label="Inv. final"><input class="readonly-field" type="number" value="0" data-field="final" readonly></td>'
       + '<td data-label="Total dinero" class="money-cell dinero" data-field="dinero">$0.00</td>'
       + '</tr>';
   }).join('');
@@ -253,18 +270,18 @@ function rowValue(row, field){
   return n(input && input.value);
 }
 
+function setRowValue(row, field, value){
+  var input = row && row.querySelector('input[data-field="' + field + '"]');
+  if(input) input.value = String(n(value));
+}
+
 function calcularProducto(row, prod){
-  var vendido = Math.max(0,
-    rowValue(row, 'anterior')
-    + rowValue(row, 'nuevo')
-    - rowValue(row, 'faltante')
-    - rowValue(row, 'danado')
-    - rowValue(row, 'final')
-  );
-  var dinero = vendido * prod.precio;
-  row.querySelector('.vendido').textContent = vendido;
+  var venta = rowValue(row, 'venta');
+  var final = rowValue(row, 'anterior') + rowValue(row, 'nuevo') - venta - rowValue(row, 'faltante') - rowValue(row, 'danado');
+  var dinero = venta * prod.precio;
+  setRowValue(row, 'final', final);
   row.querySelector('.dinero').textContent = money(dinero);
-  return { vendido: vendido, dinero: dinero };
+  return { vendido: venta, dinero: dinero, final: final };
 }
 
 function calcularTotales(){
@@ -298,6 +315,7 @@ async function validarAcceso(){
   document.getElementById('agromercado-label').textContent = match.nombre;
   document.getElementById('fecha').value = hoy();
   await aplicarEncargadoAgromercado(match.nombre);
+  await cargarValoresInicialesAgromercado(match.nombre);
   calcularTotales();
 }
 
@@ -325,94 +343,77 @@ function imprimirHojaVendedor(){
   window.print();
 }
 
-function firmaCanvas(){
-  return document.getElementById('firma-canvas');
+function productoValueFromPayload(map, key){
+  return n(map && map[key]);
 }
 
-function actualizarFirmaData(){
-  var canvas = firmaCanvas();
-  var input = document.getElementById('firma-data');
-  if(canvas && input) input.value = canvas.toDataURL('image/png');
+function aplicarValoresProducto(key, anterior, nuevo){
+  var row = document.querySelector('tr[data-prod="' + key + '"]');
+  if(!row) return;
+  setRowValue(row, 'anterior', anterior);
+  setRowValue(row, 'nuevo', nuevo);
+  calcularProducto(row, PRODUCTOS.find(function(p){ return p.key === key; }) || { precio:0 });
 }
 
-function limpiarFirma(){
-  var canvas = firmaCanvas();
-  if(!canvas) return;
-  var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  var input = document.getElementById('firma-data');
-  if(input) input.value = '';
+async function fetchSupabase(path){
+  var response = await fetch(SUPABASE_CONFIG.url + path, {
+    headers: {
+      apikey: SUPABASE_CONFIG.key,
+      Authorization: 'Bearer ' + SUPABASE_CONFIG.key
+    }
+  });
+  if(!response.ok) return null;
+  return response.json();
 }
 
-function ajustarFirmaCanvas(){
-  var canvas = firmaCanvas();
-  if(!canvas) return;
-  var data = '';
-  try{ data = canvas.toDataURL('image/png'); }catch(e){}
-  var rect = canvas.getBoundingClientRect();
-  var ratio = window.devicePixelRatio || 1;
-  var width = Math.max(320, Math.round(rect.width * ratio));
-  var height = Math.max(120, Math.round(rect.height * ratio));
-  if(canvas.width === width && canvas.height === height) return;
-  canvas.width = width;
-  canvas.height = height;
-  var ctx = canvas.getContext('2d');
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = Math.max(2, 3 * ratio);
-  ctx.strokeStyle = '#0f172a';
-  if(data){
-    var img = new Image();
-    img.onload = function(){ ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
-    img.src = data;
-  }
+async function cargarValoresInicialesRpc(agromercado, fecha){
+  var response = await fetch(SUPABASE_CONFIG.url + '/rest/v1/rpc/portal_agromercado_stock', {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_CONFIG.key,
+      Authorization: 'Bearer ' + SUPABASE_CONFIG.key,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_agromercado: agromercado, p_fecha: fecha })
+  });
+  if(!response.ok) return false;
+  var rows = await response.json();
+  (rows || []).forEach(function(row){
+    aplicarValoresProducto(row.producto, row.anterior || 0, row.nuevo || 0);
+  });
+  return Array.isArray(rows);
 }
 
-function iniciarFirmaDigital(){
-  var canvas = firmaCanvas();
-  if(!canvas) return;
-  ajustarFirmaCanvas();
-  var ctx = canvas.getContext('2d');
-  var drawing = false;
+async function cargarValoresInicialesAgromercado(agromercado){
+  var fecha = hoy();
+  var anteriores = {};
+  var nuevos = {};
 
-  function point(event){
-    var rect = canvas.getBoundingClientRect();
-    var touch = event.touches && event.touches[0] ? event.touches[0] : event;
-    return {
-      x: (touch.clientX - rect.left) * (canvas.width / rect.width),
-      y: (touch.clientY - rect.top) * (canvas.height / rect.height)
-    };
-  }
+  try{
+    if(await cargarValoresInicialesRpc(agromercado, fecha)) return;
+  }catch(e){}
 
-  function start(event){
-    drawing = true;
-    var p = point(event);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    event.preventDefault();
-  }
+  try{
+    var prevRows = await fetchSupabase('/rest/v1/ventas_agromercado?select=payload,fecha,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&fecha=lt.' + encodeURIComponent(fecha) + '&order=fecha.desc,creado_en.desc&limit=1');
+    var prevPayload = prevRows && prevRows[0] && prevRows[0].payload ? prevRows[0].payload : null;
+    PRODUCTOS.forEach(function(prod){
+      anteriores[prod.key] = productoValueFromPayload(prevPayload && prevPayload.inventario_final, prod.key);
+    });
+  }catch(e){}
 
-  function move(event){
-    if(!drawing) return;
-    var p = point(event);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    event.preventDefault();
-  }
+  try{
+    var distRows = await fetchSupabase('/rest/v1/distribucion_tiendona?select=arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload&agromercado=eq.' + encodeURIComponent(agromercado) + '&fecha=eq.' + encodeURIComponent(fecha) + '&limit=1000');
+    (distRows || []).forEach(function(row){
+      PRODUCTOS.forEach(function(prod){
+        var col = PRODUCTO_COLUMNAS[prod.key];
+        nuevos[prod.key] = n(nuevos[prod.key]) + n(row[col]);
+      });
+    });
+  }catch(e){}
 
-  function end(){
-    if(!drawing) return;
-    drawing = false;
-    actualizarFirmaData();
-  }
-
-  canvas.addEventListener('mousedown', start);
-  canvas.addEventListener('mousemove', move);
-  window.addEventListener('mouseup', end);
-  canvas.addEventListener('touchstart', start, { passive:false });
-  canvas.addEventListener('touchmove', move, { passive:false });
-  canvas.addEventListener('touchend', end);
-  window.addEventListener('resize', ajustarFirmaCanvas);
+  PRODUCTOS.forEach(function(prod){
+    aplicarValoresProducto(prod.key, anteriores[prod.key] || 0, nuevos[prod.key] || 0);
+  });
 }
 
 function leerProductos(){
@@ -486,7 +487,6 @@ async function enviarControl(event){
     gastos: gastos,
     remesa: ventas - gastos,
     dineroRemesado: ventas - gastos,
-    firma: document.getElementById('firma-data').value || '',
     observaciones: document.getElementById('observaciones').value.trim(),
     origen: 'portal-agromercado'
   }, productos);
@@ -509,8 +509,8 @@ async function enviarControl(event){
     document.getElementById('sales-form').reset();
     document.getElementById('fecha').value = hoy();
     if(accesoActual) await aplicarEncargadoAgromercado(accesoActual.nombre);
-    limpiarFirma();
     renderProductos();
+    if(accesoActual) await cargarValoresInicialesAgromercado(accesoActual.nombre);
     calcularTotales();
   }catch(error){
     setMessage('submit-message', 'No se pudo enviar: ' + error.message, 'error');
@@ -523,6 +523,5 @@ document.addEventListener('DOMContentLoaded', function(){
   renderProductos();
   var fecha = document.getElementById('fecha');
   if(fecha) fecha.value = hoy();
-  iniciarFirmaDigital();
   restaurarAccesoGuardado();
 });
