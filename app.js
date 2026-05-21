@@ -213,13 +213,12 @@ function renderProductos(){
   body.innerHTML = PRODUCTOS.map(function(p){
     return '<tr data-prod="' + p.key + '">'
       + '<td>' + p.nombre + '</td>'
-      + '<td class="money-cell">' + money(p.precio) + '</td>'
       + '<td><input type="number" min="0" value="0" data-field="anterior" oninput="calcularTotales()"></td>'
       + '<td><input type="number" min="0" value="0" data-field="nuevo" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="apartado" oninput="calcularTotales()"></td>'
-      + '<td><input type="number" min="0" value="0" data-field="danado" oninput="calcularTotales()"></td>'
       + '<td class="vendido" data-field="vendido">0</td>'
+      + '<td><input type="number" min="0" value="0" data-field="faltante" oninput="calcularTotales()"></td>'
+      + '<td><input type="number" min="0" value="0" data-field="danado" oninput="calcularTotales()"></td>'
+      + '<td><input type="number" min="0" value="0" data-field="final" oninput="calcularTotales()"></td>'
       + '<td class="money-cell dinero" data-field="dinero">$0.00</td>'
       + '</tr>';
   }).join('');
@@ -234,9 +233,9 @@ function calcularProducto(row, prod){
   var vendido = Math.max(0,
     rowValue(row, 'anterior')
     + rowValue(row, 'nuevo')
-    - rowValue(row, 'final')
-    - rowValue(row, 'apartado')
+    - rowValue(row, 'faltante')
     - rowValue(row, 'danado')
+    - rowValue(row, 'final')
   );
   var dinero = vendido * prod.precio;
   row.querySelector('.vendido').textContent = vendido;
@@ -288,7 +287,7 @@ function leerProductos(){
   var inventarioInicio = {};
   var inventarioNuevo = {};
   var inventarioFinal = {};
-  var apartado = {};
+  var faltante = {};
   var danado = {};
   var dineroProductos = {};
 
@@ -299,7 +298,7 @@ function leerProductos(){
     inventarioInicio[prod.key] = rowValue(row, 'anterior');
     inventarioNuevo[prod.key] = rowValue(row, 'nuevo');
     inventarioFinal[prod.key] = rowValue(row, 'final');
-    apartado[prod.key] = rowValue(row, 'apartado');
+    faltante[prod.key] = rowValue(row, 'faltante');
     danado[prod.key] = rowValue(row, 'danado');
     dineroProductos[prod.key] = calc.dinero;
   });
@@ -309,7 +308,8 @@ function leerProductos(){
     inventario_inicio: inventarioInicio,
     mercaderia_nueva: inventarioNuevo,
     inventario_final: inventarioFinal,
-    apartado: apartado,
+    faltante: faltante,
+    apartado: faltante,
     danado: danado,
     dinero_productos: dineroProductos
   };
