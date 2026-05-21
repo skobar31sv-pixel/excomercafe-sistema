@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EXCOMERCAFE - Control Agromercado</title>
   <link rel="icon" href="../favicon.ico">
-  <link rel="stylesheet" href="./styles.css?v=20260521-portal-v7">
+  <link rel="stylesheet" href="./styles.css?v=20260521-portal-v8">
 </head>
 <body>
   <main class="portal-shell">
@@ -43,7 +43,7 @@
             <h2>Hoja digital del vendedor</h2>
           </div>
           <div class="form-actions">
-            <button type="button" class="ghost" onclick="imprimirHojaVendedor()">Imprimir / PDF</button>
+            <button type="button" class="ghost" onclick="imprimirHojaVendedor()">Imprimir</button>
             <button type="button" class="ghost" onclick="salirPortal()">Cambiar</button>
           </div>
         </div>
@@ -90,12 +90,20 @@
 
       <section class="form-card">
         <label>Observaciones<textarea id="observaciones" rows="4" placeholder="Notas del dia"></textarea></label>
+        <div class="signature-box">
+          <div class="signature-head">
+            <label>Firma digital</label>
+            <button type="button" class="ghost small" onclick="limpiarFirma()">Limpiar</button>
+          </div>
+          <canvas id="firma-canvas" width="900" height="220"></canvas>
+          <input type="hidden" id="firma-data">
+        </div>
         <button class="primary wide" type="submit">Enviar para revisión</button>
         <p class="message" id="submit-message"></p>
       </section>
     </form>
   </main>
 
-  <script src="./app.js?v=20260521-portal-v7"></script>
+  <script src="./app.js?v=20260521-portal-v8"></script>
 </body>
 </html>
