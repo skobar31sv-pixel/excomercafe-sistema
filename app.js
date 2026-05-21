@@ -124,6 +124,42 @@ function money(value){
   return '$' + n(value).toFixed(2);
 }
 
+function normalizarTexto(value){
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function leerPersonasSistema(){
+  try{
+    var data = JSON.parse(localStorage.getItem('personas-data') || '[]');
+    return Array.isArray(data) ? data : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function encargadoPorAgromercado(agromercado){
+  var objetivo = normalizarTexto(agromercado);
+  if(!objetivo) return '';
+  var personas = leerPersonasSistema();
+  var match = personas.find(function(persona){
+    return normalizarTexto(persona.agromercado || persona.agromercadoAsignado || persona.mercado) === objetivo;
+  });
+  return match ? String(match.nombre || '').trim() : '';
+}
+
+function aplicarEncargadoAgromercado(agromercado){
+  var input = document.getElementById('encargado');
+  if(!input) return;
+  var encargado = encargadoPorAgromercado(agromercado);
+  input.value = encargado;
+  input.placeholder = encargado ? 'Encargado asignado' : 'Sin encargado asignado en Personas';
+}
+
 function localId(){
   return 'pend-' + Date.now() + '-' + Math.random().toString(16).slice(2);
 }
@@ -208,6 +244,7 @@ function validarAcceso(){
   document.getElementById('sales-form').classList.remove('hidden');
   document.getElementById('agromercado-label').textContent = match.nombre;
   document.getElementById('fecha').value = hoy();
+  aplicarEncargadoAgromercado(match.nombre);
   calcularTotales();
 }
 
