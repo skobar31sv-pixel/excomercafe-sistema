@@ -3228,6 +3228,32 @@ function chatSelectedTarget(){
   };
 }
 
+function chatPresenceUserKey(u){
+  var userId = String(u && u.user_id || '').trim();
+  if(userId) return 'user:' + userId.toLowerCase();
+  var nombre = String(u && u.nombre || 'Usuario').trim().toLowerCase();
+  return 'name:' + (nombre || 'usuario');
+}
+
+function chatPresenceTimestamp(u){
+  var time = Date.parse(u && u.ultimo_visto || '');
+  return Number.isFinite(time) ? time : 0;
+}
+
+function deduplicarUsuariosOnline(usuarios){
+  var porUsuario = {};
+  (usuarios || []).forEach(function(u){
+    if(!u) return;
+    var key = chatPresenceUserKey(u);
+    var actual = porUsuario[key];
+    if(!actual || chatPresenceTimestamp(u) > chatPresenceTimestamp(actual)){
+      porUsuario[key] = u;
+    }
+  });
+  return Object.keys(porUsuario).map(function(key){ return porUsuario[key]; })
+    .sort(function(a, b){ return chatPresenceTimestamp(b) - chatPresenceTimestamp(a); });
+}
+
 window.seleccionarChatDirecto = function(clientId){
   var select = document.getElementById('chat-target');
   if(!select || !clientId || clientId === window.chatClientId) return;
@@ -3240,9 +3266,10 @@ function actualizarDestinosChat(usuarios){
   var select = document.getElementById('chat-target');
   if(!select) return;
   var previo = select.value;
+  var userIdActual = String(typeof authUserId === 'function' ? (authUserId() || '') : '');
   select.innerHTML = '<option value="">Chat global</option>';
-  (usuarios || []).forEach(function(u){
-    if(!u || !u.client_id || u.client_id === window.chatClientId) return;
+  deduplicarUsuariosOnline(usuarios).forEach(function(u){
+    if(!u || !u.client_id || u.client_id === window.chatClientId || (userIdActual && String(u.user_id || '') === userIdActual)) return;
     var opt = document.createElement('option');
     opt.value = u.client_id;
     opt.textContent = 'Directo: ' + (u.nombre || 'Usuario');
@@ -3448,29 +3475,22 @@ async function cargarChatOnline(){
     await registrarPresenciaOnline();
     var desde = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     var usuarios = await window.supabaseRequest('/rest/v1/presence_online?select=client_id,user_id,nombre,ultimo_visto&ultimo_visto=gte.' + encodeURIComponent(desde));
-    var count = (usuarios || []).length;
+    var usuariosUnicos = deduplicarUsuariosOnline(usuarios || []);
+    var count = usuariosUnicos.length;
     var countEl = document.getElementById('online-users-count');
     var presenceEl = document.getElementById('chat-presence');
     if(countEl) countEl.textContent = count;
-    actualizarDestinosChat(usuarios || []);
+    actualizarDestinosChat(usuariosUnicos);
     if(presenceEl) {
-      var nombresUnicos = [];
-      var vistos = {};
-      (usuarios || []).forEach(function(u){
-        var nombre = String(u.nombre || 'Usuario').trim() || 'Usuario';
-        var key = String(u.client_id || nombre).toLowerCase();
-        if(!vistos[key]){
-          vistos[key] = true;
-          nombresUnicos.push({ nombre:nombre, client_id:u.client_id || '' });
-        }
-      });
       presenceEl.innerHTML = '<strong>Conectados: ' + count + '</strong>'
         + '<div class="chat-user-list">'
-        + (nombresUnicos.length ? nombresUnicos.map(function(u){
-          var mine = u.client_id === window.chatClientId;
+        + (usuariosUnicos.length ? usuariosUnicos.map(function(u){
+          var userIdActual = String(typeof authUserId === 'function' ? (authUserId() || '') : '');
+          var mine = u.client_id === window.chatClientId || (userIdActual && String(u.user_id || '') === userIdActual);
+          var nombre = String(u.nombre || 'Usuario').trim() || 'Usuario';
           return '<button type="button" class="chat-user-chip ' + (mine ? 'me' : '') + '" '
             + (mine ? 'disabled' : 'onclick="seleccionarChatDirecto(\'' + chatEscape(u.client_id) + '\')" title="Enviar directo"')
-            + '>' + chatEscape(u.nombre) + (mine ? ' (yo)' : '') + '</button>';
+            + '>' + chatEscape(nombre) + (mine ? ' (yo)' : '') + '</button>';
         }).join('') : '<span class="chat-user-chip">Sin usuarios</span>')
         + '</div>';
     }
