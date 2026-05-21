@@ -2327,6 +2327,7 @@ window.AUTH_STORAGE_KEY = 'excomercafe_auth_session';
 window.AUTH_REMEMBER_KEY = 'excomercafe_auth_remember';
 window.REGISTRATION_KEY = 'EXCOMERCAFE2026';
 window.authSession = null;
+window.authRefreshPromise = null;
 
 function usuarioToEmail(usuario){
   usuario = String(usuario || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
@@ -2366,8 +2367,15 @@ function leerSesionAuth(){
   }
 }
 
+function sesionAuthVigente(session){
+  if(!session || !session.access_token) return false;
+  var expiresAt = Number(session.expires_at || 0) * 1000;
+  if(!expiresAt) return true;
+  return Date.now() < expiresAt - 60000;
+}
+
 function authToken(){
-  return window.authSession && window.authSession.access_token ? window.authSession.access_token : '';
+  return sesionAuthVigente(window.authSession) ? window.authSession.access_token : '';
 }
 
 window.haySesionSupabase = function(){
@@ -2405,32 +2413,39 @@ function aplicarSesionAuth(session){
   if(typeof actualizarUsuarioActualUI === 'function') actualizarUsuarioActualUI();
 }
 
-async function refrescarSesionAuth(){
-  var session = window.authSession || leerSesionAuth();
-  if(!session || !session.refresh_token) return null;
-  var expiresAt = Number(session.expires_at || 0) * 1000;
-  if(session.access_token && expiresAt && Date.now() < expiresAt - 60000) {
-    aplicarSesionAuth(session);
-    return session;
+async function refrescarSesionAuth(force){
+  if(window.authRefreshPromise) return window.authRefreshPromise;
+  window.authRefreshPromise = (async function(){
+    var session = window.authSession || leerSesionAuth();
+    if(!session || !session.refresh_token) return null;
+    if(!force && sesionAuthVigente(session)) {
+      aplicarSesionAuth(session);
+      return session;
+    }
+    var response = await fetch(window.SUPABASE_CONFIG.url + '/auth/v1/token?grant_type=refresh_token', {
+      method:'POST',
+      headers:{
+        apikey: window.SUPABASE_CONFIG.key,
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify({ refresh_token: session.refresh_token })
+    });
+    var data = await response.json().catch(function(){ return null; });
+    if(!response.ok) {
+      aplicarSesionAuth(null);
+      return null;
+    }
+    if(data && data.expires_in && !data.expires_at) {
+      data.expires_at = Math.floor(Date.now() / 1000) + Number(data.expires_in || 0);
+    }
+    aplicarSesionAuth(data);
+    return data;
+  })();
+  try {
+    return await window.authRefreshPromise;
+  } finally {
+    window.authRefreshPromise = null;
   }
-  var response = await fetch(window.SUPABASE_CONFIG.url + '/auth/v1/token?grant_type=refresh_token', {
-    method:'POST',
-    headers:{
-      apikey: window.SUPABASE_CONFIG.key,
-      'Content-Type':'application/json'
-    },
-    body: JSON.stringify({ refresh_token: session.refresh_token })
-  });
-  var data = await response.json().catch(function(){ return null; });
-  if(!response.ok) {
-    aplicarSesionAuth(null);
-    return null;
-  }
-  if(data && data.expires_in && !data.expires_at) {
-    data.expires_at = Math.floor(Date.now() / 1000) + Number(data.expires_in || 0);
-  }
-  aplicarSesionAuth(data);
-  return data;
 }
 
 window.loginUsuarioSistema = async function(event){
@@ -2569,16 +2584,33 @@ window.supabaseRequest = async function(table, options){
   };
   if (options.prefer) headers.Prefer = options.prefer;
 
-  var response = await fetch(window.SUPABASE_CONFIG.url + path, {
-    method: method,
-    headers: headers,
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
+  async function sendRequest(){
+    var response = await fetch(window.SUPABASE_CONFIG.url + path, {
+      method: method,
+      headers: headers,
+      body: options.body ? JSON.stringify(options.body) : undefined
+    });
+    var text = await response.text();
+    var data = text ? JSON.parse(text) : null;
+    return { response: response, data: data };
+  }
 
-  var text = await response.text();
-  var data = text ? JSON.parse(text) : null;
+  var result = await sendRequest();
+  var response = result.response;
+  var data = result.data;
+  var message = (data && data.message) ? data.message : response.status + ' ' + response.statusText;
+  if (response.status === 401 && /jwt expired/i.test(message)) {
+    var refreshed = await refrescarSesionAuth(true);
+    if(refreshed && authToken()) {
+      headers.Authorization = 'Bearer ' + authToken();
+      result = await sendRequest();
+      response = result.response;
+      data = result.data;
+      message = (data && data.message) ? data.message : response.status + ' ' + response.statusText;
+    }
+  }
   if (!response.ok) {
-    throw new Error((data && data.message) ? data.message : response.status + ' ' + response.statusText);
+    throw new Error(message);
   }
   return data;
 };
