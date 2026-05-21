@@ -1454,6 +1454,7 @@
       <span>🏦 Detalle de Remesas por Banco</span>
       <div class="flex gap-8 items-center flex-wrap">
         <button type="button" class="btn btn-sm btn-primary" onclick="imprimirTablaPorTitulo('Reporte de Bancos', '#tbl-bancos')">Imprimir</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="cargarVentasDesdeSupabase()">🔄 Actualizar</button>
         <button class="btn btn-sm btn-secondary" onclick="document.getElementById(&#39;excel-import-input&#39;).click()">📂 Importar Excel</button>
         <button class="btn btn-sm btn-accent" onclick="exportarExcel(&#39;bancos&#39;)">📥 Exportar Excel</button>
       </div>
@@ -1564,6 +1565,7 @@
       <span id="historial-descargas-toggle" style="font-size:0.8rem;color:var(--muted);">▼</span>
       <div class="flex gap-8 items-center flex-wrap" style="margin-left:auto;">
         <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); imprimirHistorialTiendona()">Imprimir</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); cargarVentasDesdeSupabase()">🔄 Actualizar</button>
         <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); importarDescargasExcel()">📂 Importar Excel</button>
         <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); exportarDescargasExcel()">📂 Exportar Excel</button>
       </div>
@@ -1928,6 +1930,7 @@
           "
         >
         <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); imprimirTablaPorTitulo('Historial de Inventario', '#tbl-inventario')">Imprimir</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); cargarVentasDesdeSupabase()">🔄 Actualizar</button>
         <button class="btn btn-sm btn-secondary" onclick="importarInventarioExcel()">📂 Importar Excel</button>
       </div>
     </div>
@@ -4576,6 +4579,8 @@ window.guardarRegistro = function(){
     ts: Date.now()
   };
   PRODUCTOS.forEach(function(p){ registro.ventas_unidades[p] = n(p+'-ven'); });
+  registro.local_id = 'venta-' + registro.ts;
+  registro.id = registro.local_id;
 
   var hist = JSON.parse(localStorage.getItem('exc_agro_hist')||'[]');
   hist.unshift(registro);
@@ -5016,7 +5021,14 @@ window.eliminarRegistro = function(index){
   revertirInventarioPorVenta(registroEliminado);
   hist.splice(index, 1);
   localStorage.setItem('exc_agro_hist', JSON.stringify(hist));
-  eliminarSupabasePorLocalId('ventas_agromercado', registroEliminado.id);
+  var localIdValue = registroEliminado.local_id || registroEliminado.id || registroEliminado.ts || registroEliminado.timestamp;
+  if (localIdValue) {
+    eliminarSupabasePorLocalId('ventas_agromercado', localIdValue);
+  } else {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Registro eliminado localmente. No se encontró ID para borrar en Supabase.');
+    }
+  }
   
   refrescarInventarioEnTiempoReal();
   renderHistorial();
@@ -10473,6 +10485,12 @@ document.addEventListener('DOMContentLoaded', function(){
           bancosSistema.actualizarTodosLosSelectores();
         }
       }, 100);
+
+      if (typeof window.cargarVentasDesdeSupabase === 'function') {
+        window.cargarVentasDesdeSupabase().catch(function(error){
+          console.warn('No se pudo actualizar historial desde Supabase al abrir Control de Venta:', error);
+        });
+      }
     }
 
     // Recibos
@@ -15838,14 +15856,78 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
+  window.cargarVentasDesdeSupabase = async function(){
+    if (!window.supabaseRequest) throw new Error('Supabase no disponible');
+    if (!navigator.onLine) throw new Error('Sin conexion a internet');
+    if (!window.haySesionSupabase || !window.haySesionSupabase()) throw new Error('Sesion Supabase no iniciada');
+
+    try {
+      if (typeof window.sincronizarPendientesSupabase === 'function') {
+        await window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true });
+      }
+    } catch(error){
+      console.warn('Error sincronizando pendientes antes de cargar ventas:', error);
+    }
+
+    var rows = await window.supabaseRequest('/rest/v1/ventas_agromercado?select=payload,local_id,creado_en&order=creado_en.desc&limit=1000');
+    var local = JSON.parse(localStorage.getItem('exc_agro_hist')||'[]');
+    var pendingLocal = local.filter(function(item){ return item && !item.supabase_synced; });
+    var merged = [];
+    var existingLocal = {};
+
+    (rows || []).forEach(function(row){
+      if (!row || !row.payload) return;
+      var payload = row.payload;
+      var key = row.local_id || payload.local_id || payload.id || '';
+      if (key) {
+        payload.local_id = key;
+      }
+      payload.supabase_synced = true;
+      payload.supabase_synced_at = row.creado_en || new Date().toISOString();
+      if (payload.local_id) {
+        existingLocal[payload.local_id] = true;
+      }
+      merged.push(payload);
+    });
+
+    pendingLocal.forEach(function(item){
+      var key = item.local_id || item.id || item.ts || item.timestamp;
+      if (!key) return;
+      if (!existingLocal[key]) merged.unshift(item);
+    });
+
+    localStorage.setItem('exc_agro_hist', JSON.stringify(merged));
+    if (typeof renderHistorial === 'function') renderHistorial();
+    if (typeof renderBancos === 'function') renderBancos();
+    if (typeof cargarResumenRemesas === 'function') cargarResumenRemesas();
+    if (typeof actualizarResumenRemesasDia === 'function') actualizarResumenRemesasDia();
+    if (typeof cargarPanelPrincipal === 'function') cargarPanelPrincipal();
+    return merged;
+  };
+
+  window.cargarHistorial = window.cargarVentasDesdeSupabase;
+
   function syncSoon(){
     if (!window.haySesionSupabase || !window.haySesionSupabase()) return;
     setTimeout(function(){
-      window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-        console.warn('No se pudo sincronizar con Supabase:', error);
-        currentOnlineStatus('Guardado local. Supabase pendiente: ' + error.message);
-        if (typeof showToast === 'function') showToast('Guardado local. Supabase pendiente.');
-      });
+      if (typeof window.cargarVentasDesdeSupabase === 'function') {
+        window.cargarVentasDesdeSupabase().catch(function(error){
+          console.warn('No se pudo sincronizar y cargar ventas desde Supabase:', error);
+          if (typeof window.sincronizarPendientesSupabase === 'function') {
+            window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
+              console.warn('No se pudo sincronizar con Supabase:', error);
+              currentOnlineStatus('Guardado local. Supabase pendiente: ' + error.message);
+              if (typeof showToast === 'function') showToast('Guardado local. Supabase pendiente.');
+            });
+          }
+        });
+      } else {
+        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
+          console.warn('No se pudo sincronizar con Supabase:', error);
+          currentOnlineStatus('Guardado local. Supabase pendiente: ' + error.message);
+          if (typeof showToast === 'function') showToast('Guardado local. Supabase pendiente.');
+        });
+      }
     }, 300);
   }
 
@@ -15900,9 +15982,15 @@ document.addEventListener('DOMContentLoaded', function() {
         setOnlineIndicator(navigator.onLine ? 'syncing' : 'offline', navigator.onLine ? 'Inicia sesion' : 'Sin conexion');
         return;
       }
-      window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-        console.warn('Sincronizacion inicial pendiente:', error);
-      });
+      if (typeof window.cargarVentasDesdeSupabase === 'function') {
+        window.cargarVentasDesdeSupabase().catch(function(error){
+          console.warn('Sincronizacion inicial pendiente:', error);
+        });
+      } else {
+        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
+          console.warn('Sincronizacion inicial pendiente:', error);
+        });
+      }
     }, 1200);
 
     if (window.excomercafeSyncTimer) clearInterval(window.excomercafeSyncTimer);
@@ -15916,10 +16004,16 @@ document.addEventListener('DOMContentLoaded', function() {
         setOnlineIndicator('syncing', 'Inicia sesion');
         return;
       }
-      window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-        console.warn('Sincronizacion automatica pendiente:', error);
-      });
-    }, 30000);
+      if (typeof window.cargarVentasDesdeSupabase === 'function') {
+        window.cargarVentasDesdeSupabase().catch(function(error){
+          console.warn('Sincronizacion automatica pendiente:', error);
+        });
+      } else {
+        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
+          console.warn('Sincronizacion automatica pendiente:', error);
+        });
+      }
+    }, 10000);
 
     window.addEventListener('online', function(){
       setOnlineIndicator('syncing', 'Sincronizando...');
@@ -15927,9 +16021,15 @@ document.addEventListener('DOMContentLoaded', function() {
         setOnlineIndicator('syncing', 'Inicia sesion');
         return;
       }
-      window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-        console.warn('Sincronizacion al reconectar pendiente:', error);
-      });
+      if (typeof window.cargarVentasDesdeSupabase === 'function') {
+        window.cargarVentasDesdeSupabase().catch(function(error){
+          console.warn('Sincronizacion al reconectar pendiente:', error);
+        });
+      } else {
+        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
+          console.warn('Sincronizacion al reconectar pendiente:', error);
+        });
+      }
     });
 
     window.addEventListener('offline', function(){
