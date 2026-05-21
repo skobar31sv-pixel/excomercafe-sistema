@@ -316,11 +316,19 @@ function setRowValue(row, field, value){
   if(input) input.value = String(n(value));
 }
 
+function marcarErrorInventario(row, hasError){
+  if(!row) return;
+  row.classList.toggle('row-error', !!hasError);
+  var finalInput = row.querySelector('input[data-field="final"]');
+  if(finalInput) finalInput.classList.toggle('input-error', !!hasError);
+}
+
 function calcularProducto(row, prod){
   var venta = rowValue(row, 'venta');
   var final = rowValue(row, 'anterior') + rowValue(row, 'nuevo') - venta - rowValue(row, 'faltante') - rowValue(row, 'danado');
   var dinero = venta * prod.precio;
   setRowValue(row, 'final', final);
+  marcarErrorInventario(row, final < 0);
   row.querySelector('.dinero').textContent = money(dinero);
   return { vendido: venta, dinero: dinero, final: final };
 }
@@ -336,6 +344,24 @@ function calcularTotales(){
   document.getElementById('total-ventas').textContent = money(total);
   document.getElementById('total-gastos').textContent = money(gastos);
   document.getElementById('total-remesa').textContent = money(total - gastos);
+}
+
+function validarInventarioDisponible(){
+  var errores = [];
+  PRODUCTOS.forEach(function(prod){
+    var row = document.querySelector('tr[data-prod="' + prod.key + '"]');
+    if(!row) return;
+    var calc = calcularProducto(row, prod);
+    if(calc.final < 0){
+      errores.push(prod.nombre + ': ' + calc.final);
+    }
+  });
+  if(errores.length){
+    setMessage('submit-message', 'No se puede enviar: hay ventas/faltantes/dañado mayores al inventario disponible. Revisa las casillas en rojo.', 'error');
+    alert('No se puede enviar el reporte. Inventario negativo en:\n\n' + errores.join('\n'));
+    return false;
+  }
+  return true;
 }
 
 async function validarAcceso(){
@@ -607,6 +633,7 @@ async function enviarControl(event){
   }
   setMessage('submit-message', 'Enviando...', '');
   calcularTotales();
+  if(!validarInventarioDisponible()) return;
   var productos = leerProductos();
   var ventas = PRODUCTOS.reduce(function(acc, prod){
     return acc + n(productos.dinero_productos[prod.key]);

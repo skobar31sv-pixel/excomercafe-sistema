@@ -246,6 +246,18 @@ button.small{
   font-weight:800;
 }
 
+.sales-table tr.row-error{
+  outline:2px solid var(--danger);
+  outline-offset:-2px;
+}
+
+.sales-table input.input-error{
+  border-color:var(--danger);
+  background:#fee2e2;
+  color:#991b1b;
+  font-weight:900;
+}
+
 .totals{
   display:grid;
   grid-template-columns:repeat(3,1fr);
