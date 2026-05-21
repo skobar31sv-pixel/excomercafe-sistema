@@ -4,7 +4,7 @@
 <title>EXCOMERCAFE — Reporte Agromercados</title>
 <link rel="icon" href="./favicon.ico">
 <link rel="apple-touch-icon" href="./favicon.png">
-<link href="./css/styles.css?v=20260521-dashboard-pro" rel="stylesheet">
+<link href="./css/styles.css?v=20260521-logo-header" rel="stylesheet">
 <link href="./css/components.css?v=20260519-phase61" rel="stylesheet">
 <link href="./css/distribution-matrix.css?v=20260521-cuadre-bodegas" rel="stylesheet">
 <script>
@@ -431,26 +431,127 @@
     .chat-messages{min-height:150px;}
   }
   body.theme-verde{
-    --bg-primary:#f4f7fb;
-    --bg-secondary:#eef4fb;
-    --card-bg:#ffffff;
-    --text-primary:#0f172a;
-    --text-secondary:#334155;
-    --text-muted:#64748b;
-    --border-color:#dbeafe;
-    --card-border:#dbeafe;
-    --button-bg:#0f172a;
+    --bg-primary:#e7f2ea;
+    --bg-secondary:#edf7ef;
+    --card-bg:#fbfffc;
+    --text-primary:#10241a;
+    --text-secondary:#244335;
+    --text-muted:#5f766b;
+    --border-color:#bdd8c5;
+    --card-border:#c7decf;
+    --button-bg:#123323;
     --button-hover:#166534;
     --accent-color:#22c55e;
-    --brand:#166534;
-    --brand2:#166534;
-    --surface:#f4f7fb;
-    --surface2:#eef4fb;
-    --border:#dbeafe;
-    --border2:#bfdbfe;
-    --muted:#64748b;
-    --ink:#0f172a;
+    --brand:#155e3b;
+    --brand2:#0f5132;
+    --surface:#eef8f1;
+    --surface2:#dff0e4;
+    --border:#c7decf;
+    --border2:#abcdb8;
+    --muted:#5f766b;
+    --ink:#10241a;
     --accent:#22c55e;
+    --sidebar-bg:#0b281d;
+    --sidebar-bg-2:#123323;
+    --input-bg:#f5fff7;
+    --input-border:#abcdb8;
+    --table-header:#155e3b;
+  }
+  body.theme-verde,
+  body.theme-verde main{
+    background:
+      radial-gradient(circle at top right, rgba(34,197,94,.10), transparent 32rem),
+      linear-gradient(180deg, #e7f2ea 0%, #f1f8f3 100%) !important;
+    color:var(--text-primary) !important;
+  }
+  body.theme-verde .tab-content,
+  body.theme-verde .settings-panel{
+    background:transparent !important;
+  }
+  body.theme-verde .card,
+  body.theme-verde .dashboard-card,
+  body.theme-verde .dashboard-kpi,
+  body.theme-verde .dashboard-panel,
+  body.theme-verde .home-card,
+  body.theme-verde .report-summary-kpi,
+  body.theme-verde .remesas-summary,
+  body.theme-verde .modal-content,
+  body.theme-verde .review-card,
+  body.theme-verde .tbl-wrap,
+  body.theme-verde .table-wrap,
+  body.theme-verde .bank-report-wrap{
+    background:linear-gradient(180deg, #fbfffc 0%, #f6fcf7 100%) !important;
+    border-color:var(--card-border) !important;
+    box-shadow:0 14px 34px rgba(18,51,35,.08) !important;
+  }
+  body.theme-verde .card-header,
+  body.theme-verde .dashboard-panel-head,
+  body.theme-verde .review-pill,
+  body.theme-verde .report-summary-card,
+  body.theme-verde .dashboard-activity-item{
+    background:#eef8f1 !important;
+    border-color:var(--border) !important;
+  }
+  body.theme-verde input,
+  body.theme-verde select,
+  body.theme-verde textarea,
+  body.theme-verde .fg input,
+  body.theme-verde .fg select,
+  body.theme-verde .fg textarea,
+  body.theme-verde .selector-moderno{
+    background:#f5fff7 !important;
+    border-color:var(--input-border) !important;
+    color:var(--text-primary) !important;
+  }
+  body.theme-verde input[readonly],
+  body.theme-verde input:disabled,
+  body.theme-verde select:disabled,
+  body.theme-verde textarea:disabled{
+    background:#e3f0e7 !important;
+    color:#51665b !important;
+  }
+  body.theme-verde table th,
+  body.theme-verde .tbl th,
+  body.theme-verde .tbl thead th,
+  body.theme-verde .bank-report-table th,
+  body.theme-verde .report-summary-table th,
+  body.theme-verde .review-detail th{
+    background:#155e3b !important;
+    color:#ffffff !important;
+    border-color:rgba(255,255,255,.14) !important;
+  }
+  body.theme-verde table td,
+  body.theme-verde .tbl td,
+  body.theme-verde .tbl tbody td,
+  body.theme-verde .bank-report-table td,
+  body.theme-verde .report-summary-table td,
+  body.theme-verde .review-detail td{
+    background:#fbfffc !important;
+    color:var(--text-primary) !important;
+    border-color:#d3e6d8 !important;
+  }
+  body.theme-verde .tbl tbody tr:nth-child(even) td,
+  body.theme-verde .bank-report-table tbody tr:nth-child(even) td,
+  body.theme-verde table tr:hover td,
+  body.theme-verde .tbl tbody tr:hover td{
+    background:#eef8f1 !important;
+  }
+  body.theme-verde .dashboard-date-card,
+  body.theme-verde .data-tabs,
+  body.theme-verde .settings-panel .sp-section{
+    background:#f6fcf7 !important;
+    border-color:var(--border) !important;
+  }
+  body.theme-verde .home-card-icon,
+  body.theme-verde #tab-inicio .home-card-icon{
+    background:#dff0e4 !important;
+    color:#155e3b !important;
+  }
+  body.theme-verde .btn-secondary,
+  body.theme-verde .sp-btn{
+    background:#f6fcf7 !important;
+    border-color:#abcdb8 !important;
+    color:#10241a !important;
   }
   .report-summary-toolbar{
     display:flex;
@@ -671,6 +772,10 @@
 <!-- ══ HEADER ══ -->
 <header class="header">
   <button type="button" class="sidebar-mobile-toggle" aria-label="Abrir menú" aria-expanded="false" onclick="toggleMobileSidebar()">☰</button>
+  <div class="logo-box" id="logo-box" onclick="document.getElementById('logo-input').click()" title="Cambiar logo">
+    <img src="./favicon.png" alt="Logo EXCOMERCAFE" class="header-logo-img">
+    <div class="logo-hint">Cambiar</div>
+  </div>
   <div class="header-brand">
     <div class="header-sub">Reporte Agromercados</div>
     <h1>EXCOMERCAFE</h1>
