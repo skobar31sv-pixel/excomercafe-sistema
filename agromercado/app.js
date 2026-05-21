@@ -76,7 +76,7 @@ var PRODUCTOS = [
   { key:'arroz', nombre:'Arroz', precio:0.25 },
   { key:'precocido', nombre:'Arroz precocido', precio:0.60 },
   { key:'frijol1', nombre:'Frijol 1 lb', precio:0.70 },
-  { key:'frijol4', nombre:'Frijol 4 lb', precio:2.80 },
+  { key:'frijol4', nombre:'Frijol 4 lb', precio:0.70 },
   { key:'aceite', nombre:'Aceite vegetal 750 ml', precio:1.00 },
   { key:'harina', nombre:'Harina de maiz 820 grs', precio:1.10 }
 ];
