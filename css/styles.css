@@ -2791,3 +2791,43 @@ select option{
     grid-template-columns:1fr !important;
   }
 }
+
+/* Logo visible junto a EXCOMERCAFE */
+.header-logo-img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+@media (min-width:901px){
+  body.smart-menu-collapsed .header::after{
+    content:none !important;
+  }
+
+  body.smart-menu-collapsed .logo-box{
+    width:42px !important;
+    height:42px !important;
+    min-width:42px !important;
+    margin:0 !important;
+    display:flex !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:0 10px 20px rgba(0,0,0,.18);
+  }
+
+  body.smart-menu-expanded .header{
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  body.smart-menu-expanded .logo-box{
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    display:flex !important;
+    opacity:1 !important;
+    visibility:visible !important;
+  }
+}
