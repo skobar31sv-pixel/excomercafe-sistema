@@ -1158,6 +1158,7 @@
     <div class="card-header">
       <span>🌾🔴🟡🌽 &nbsp;Control de Venta en Agromercado</span>
       <div class="flex gap-8 items-center flex-wrap">
+        <button class="btn btn-sm btn-primary" onclick="refrescarControlVentaSinPerderDigitado()">Refrescar</button>
         <button class="btn btn-sm btn-secondary" onclick="limpiarFormulario()" style="display:none;">🔄 Nuevo día</button>
         <button class="btn btn-sm btn-secondary" onclick="document.getElementById(&#39;excel-import-input&#39;).click()">📂 Importar Excel</button>
         <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarExcel(this)">
@@ -3299,6 +3300,9 @@ window.aprobarVentaPendiente = async function(index){
   };
   payload.supabase_synced = true;
   payload.supabase_synced_at = new Date().toISOString();
+  payload.usuario = payload.usuario || authUserNameFromSession(window.authSession) || payload.encargado || '';
+  payload.usuarioCierre = payload.usuarioCierre || payload.usuario;
+  payload.revisado_por = authUserNameFromSession(window.authSession);
   try {
     await window.supabaseRequest('ventas_agromercado?on_conflict=local_id', {
       method:'POST',
@@ -5266,7 +5270,13 @@ window.eliminarRegistro = function(index){
   localStorage.setItem('exc_agro_hist', JSON.stringify(hist));
   var localIdValue = registroEliminado.local_id || registroEliminado.id || registroEliminado.ts || registroEliminado.timestamp;
   if (localIdValue) {
-    eliminarSupabasePorLocalId('ventas_agromercado', localIdValue);
+    eliminarSupabasePorLocalId('ventas_agromercado', localIdValue).then(function(){
+      if(typeof window.sincronizarPendientesSupabase === 'function') {
+        window.sincronizarPendientesSupabase({ noInterrupt:true, silent:true }).catch(function(error){
+          console.warn('Sincronizacion tras borrar pendiente:', error);
+        });
+      }
+    });
   } else {
     if (typeof showToast === 'function') {
       showToast('⚠️ Registro eliminado localmente. No se encontró ID para borrar en Supabase.');
@@ -14412,7 +14422,7 @@ document.addEventListener('DOMContentLoaded', function() {
       + '<button type="button" class="btn btn-sm btn-secondary" onclick="limpiarFiltrosHistorialReportesVenta()">Limpiar</button>'
       + '</div>'
       + '<table class="tbl" id="control-venta-reportes-table">'
-      + '<thead><tr><th>Fecha</th><th>Estado</th><th>Agromercado</th><th>Encargado</th><th>Ventas</th><th>Gastos</th><th>Remesa</th><th>Banco</th><th>Observaciones</th><th>Acciones</th></tr></thead>'
+      + '<thead><tr><th>Fecha</th><th>Estado</th><th>Agromercado</th><th>Encargado</th><th>Usuario</th><th>Ventas</th><th>Gastos</th><th>Remesa</th><th>Banco</th><th>Observaciones</th><th>Acciones</th></tr></thead>'
       + '<tbody id="control-venta-reportes-body"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:18px;">Sin reportes.</td></tr></tbody>'
       + '</table></div>';
     target.parentNode.insertBefore(card, target.nextSibling);
@@ -14480,7 +14490,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     if (status) status.textContent = rows.length + ' reportes';
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:18px;">Sin reportes de venta guardados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:18px;">Sin reportes de venta guardados.</td></tr>';
       return;
     }
     tbody.innerHTML = rows.map(function(row){
@@ -14490,6 +14500,7 @@ document.addEventListener('DOMContentLoaded', function() {
         + '<td><span class="venta-reporte-badge ' + (estado === 'pendiente' ? 'amarillo' : (estado === 'rechazado' ? 'rojo' : 'verde')) + '">' + esc(estado) + '</span></td>'
         + '<td><strong>' + esc(row.agromercado || row.nombre || '') + '</strong></td>'
         + '<td>' + esc(row.encargado || row.usuarioCierre || row.usuario || '') + '</td>'
+        + '<td>' + esc(row.usuarioCierre || row.usuario || row.revisado_por || row.creado_por || row.encargado || '') + '</td>'
         + '<td>' + money(row.ventas) + '</td>'
         + '<td>' + money(row.gastos) + '</td>'
         + '<td>' + money(row.remesa) + '</td>'
@@ -14593,6 +14604,43 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     return draft;
   }
+
+  function restoreDraft(draft){
+    if(!draft) return;
+    document.querySelectorAll('#tbody-control-venta-fija tr[data-agro]').forEach(function(row){
+      var agro = row.getAttribute('data-agro') || '';
+      var saved = draft[agro];
+      if(!saved) return;
+      VENTA_PRODUCTS.forEach(function(p){
+        ['ventas','faltante','danadas'].forEach(function(field){
+          var input = row.querySelector('input[data-prod="' + p.key + '"][data-field="' + field + '"]');
+          if(input && saved[p.key] && saved[p.key][field] !== undefined) input.value = saved[p.key][field];
+        });
+      });
+    });
+    updateVentaMatrixTotals();
+  }
+
+  window.refrescarControlVentaSinPerderDigitado = async function(){
+    var draft = captureDraft();
+    var btn = (typeof event !== 'undefined' && event && event.currentTarget) ? event.currentTarget : null;
+    if(btn) btn.disabled = true;
+    try{
+      if(typeof showToast === 'function') showToast('Refrescando sin borrar lo digitado...');
+      if(typeof window.sincronizarPendientesSupabase === 'function') {
+        await window.sincronizarPendientesSupabase({ noInterrupt:true, silent:true });
+      }
+      renderControlVentaMatrix();
+      restoreDraft(draft);
+      if(typeof actualizarEstadoReportesAgromercado === 'function') await actualizarEstadoReportesAgromercado();
+      if(typeof refrescarInventarioEnTiempoReal === 'function') refrescarInventarioEnTiempoReal();
+      if(typeof showToast === 'function') showToast('Refrescado. Lo digitado se mantuvo.');
+    }catch(error){
+      if(typeof showToast === 'function') showToast('No se pudo refrescar: ' + (error.message || error));
+    }finally{
+      if(btn) btn.disabled = false;
+    }
+  };
 
   function cellHtml(prod, field, value){
     var readonly = field.editable ? '' : ' readonly';
@@ -16185,6 +16233,24 @@ document.addEventListener('DOMContentLoaded', function() {
     return String(record && (record.id || record.local_id || record.ts || record.timestamp) || Date.now());
   }
 
+  function usuarioActualRegistro(){
+    try {
+      if(window.authSession) return authUserNameFromSession(window.authSession);
+    } catch(error) {}
+    try {
+      if(typeof chatName === 'function') return chatName();
+    } catch(error) {}
+    return '';
+  }
+
+  function asegurarUsuarioRegistro(record){
+    if(!record || typeof record !== 'object') return record;
+    var usuario = usuarioActualRegistro();
+    if(usuario && !record.usuario && !record.usuarioCierre) record.usuario = usuario;
+    if(usuario && !record.creado_por) record.creado_por = usuario;
+    return record;
+  }
+
   function readLocalList(key){
     try {
       var value = localStorage.getItem(key);
@@ -16225,6 +16291,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function inventarioToSupabase(record){
+    asegurarUsuarioRegistro(record);
     return {
       local_id: localId(record),
       user_id: authUserId() || null,
@@ -16246,6 +16313,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function distribucionTiendonaToSupabase(record){
+    asegurarUsuarioRegistro(record);
     return {
       local_id: localId(record),
       fecha: record.fecha || null,
@@ -16266,6 +16334,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function distribucionCdaToSupabase(record){
+    asegurarUsuarioRegistro(record);
     return {
       local_id: localId(record),
       fecha: record.fecha || null,
@@ -16302,6 +16371,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function ventaToSupabase(record){
+    asegurarUsuarioRegistro(record);
     return {
       local_id: localId(record),
       fecha: record.fecha || null,
@@ -16351,6 +16421,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!pendientes.length) return 0;
 
+    pendientes.forEach(asegurarUsuarioRegistro);
     var payload = pendientes.map(config.toSupabase);
     var inserted;
     try {
@@ -16400,16 +16471,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function downloadRemoteTable(config){
     if (!window.supabaseRequest) return 0;
-    var rows = await window.supabaseRequest('/rest/v1/' + config.table + '?select=local_id,payload,creado_en&order=creado_en.desc&limit=1000');
+    var rows = await window.supabaseRequest('/rest/v1/' + config.table + '?select=local_id,payload,creado_en&order=creado_en.desc&limit=5000');
     var local = readLocalList(config.storageKey);
     var existing = {};
     local.forEach(function(record, index){ existing[localId(record)] = index; });
     var added = 0;
     var updated = 0;
+    var removed = 0;
+    var remoteIds = {};
 
     (rows || []).reverse().forEach(function(row){
       if (!row || !row.payload) return;
       var id = String(row.local_id || localId(row.payload));
+      remoteIds[id] = true;
       if (Object.prototype.hasOwnProperty.call(existing, id)) {
         var currentIndex = existing[id];
         var currentRecord = local[currentIndex] || {};
@@ -16437,8 +16511,18 @@ document.addEventListener('DOMContentLoaded', function() {
       added++;
     });
 
-    if (added || updated) writeLocalList(config.storageKey, local);
-    return added + updated;
+    if (config.pruneMissing) {
+      local = local.filter(function(record){
+        var id = localId(record);
+        if(!id || !record.supabase_synced) return true;
+        if(remoteIds[id]) return true;
+        removed++;
+        return false;
+      });
+    }
+
+    if (added || updated || removed) writeLocalList(config.storageKey, local);
+    return added + updated + removed;
   }
 
   async function uploadCuadreObject(storageKey, tipo){
@@ -16503,10 +16587,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   var SUPABASE_SYNC_CONFIGS = [
-    { table: 'ventas_agromercado', storageKey: 'exc_agro_hist', toSupabase: ventaToSupabase },
-    { table: 'inventario_movimientos', storageKey: 'inventario-data', toSupabase: inventarioToSupabase },
-    { table: 'distribucion_tiendona', storageKey: 'descargas-data', toSupabase: distribucionTiendonaToSupabase },
-    { table: 'distribucion_cda', storageKey: 'distribucion-cda-data', toSupabase: distribucionCdaToSupabase },
+    { table: 'ventas_agromercado', storageKey: 'exc_agro_hist', toSupabase: ventaToSupabase, pruneMissing: true },
+    { table: 'inventario_movimientos', storageKey: 'inventario-data', toSupabase: inventarioToSupabase, pruneMissing: true },
+    { table: 'distribucion_tiendona', storageKey: 'descargas-data', toSupabase: distribucionTiendonaToSupabase, pruneMissing: true },
+    { table: 'distribucion_cda', storageKey: 'distribucion-cda-data', toSupabase: distribucionCdaToSupabase, pruneMissing: true },
     { table: 'personas_sistema', storageKey: 'personas-data', toSupabase: personaToSupabase }
   ];
 
