@@ -622,7 +622,7 @@ async function cargarHistorialVentas(agromercado){
   var status = document.getElementById('historial-status');
   if(status) status.textContent = 'Cargando...';
   try{
-    var official = await fetchSupabase('/rest/v1/ventas_agromercado?select=fecha,agromercado,encargado,ventas,gastos,remesa,banco,observaciones,payload,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&order=fecha.desc,creado_en.desc&limit=50');
+    var official = await fetchSupabase('/rest/v1/ventas_agromercado?select=fecha,agromercado,ventas,gastos,remesa,banco,observaciones,payload,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&order=fecha.desc,creado_en.desc&limit=50');
     var pending = await fetchSupabase('/rest/v1/ventas_agromercado_pendientes?select=fecha,agromercado,encargado,estado,ventas,gastos,remesa,payload,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&order=creado_en.desc&limit=50');
     var rows = [];
     (official || []).forEach(function(row){
@@ -639,6 +639,21 @@ async function cargarHistorialVentas(agromercado){
     if(status) status.textContent = 'Error';
     var cont = document.getElementById('historial-ventas');
     if(cont) cont.innerHTML = '<div class="history-empty">No se pudo cargar el historial.</div>';
+  }
+}
+
+async function refrescarPortalManual(){
+  if(!accesoActual) return;
+  var btn = (typeof event !== 'undefined' && event && event.currentTarget) ? event.currentTarget : null;
+  if(btn) btn.disabled = true;
+  setMessage('submit-message', 'Actualizando inventario e historial...', '');
+  try{
+    await refrescarHojaVendedor(false);
+    setMessage('submit-message', 'Actualizado. Lo digitado se mantiene.', 'ok');
+  }catch(error){
+    setMessage('submit-message', 'No se pudo actualizar: ' + (error.message || error), 'error');
+  }finally{
+    if(btn) btn.disabled = false;
   }
 }
 
