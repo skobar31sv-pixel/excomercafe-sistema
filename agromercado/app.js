@@ -423,6 +423,128 @@ function imprimirHojaVendedor(){
   win.document.close();
 }
 
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines){
+  var words = String(text || '').split(/\s+/);
+  var line = '';
+  var lines = 0;
+  for(var i = 0; i < words.length; i++){
+    var test = line ? line + ' ' + words[i] : words[i];
+    if(ctx.measureText(test).width > maxWidth && line){
+      ctx.fillText(line, x, y);
+      y += lineHeight;
+      line = words[i];
+      lines++;
+      if(maxLines && lines >= maxLines) return;
+    }else{
+      line = test;
+    }
+  }
+  if(line) ctx.fillText(line, x, y);
+}
+
+function reporteCanvas(){
+  calcularTotales();
+  var canvas = document.createElement('canvas');
+  canvas.width = 1000;
+  canvas.height = 1320;
+  var ctx = canvas.getContext('2d');
+  var fecha = document.getElementById('fecha') ? document.getElementById('fecha').value : hoy();
+  var encargado = document.getElementById('encargado') ? document.getElementById('encargado').value : '';
+  var banco = document.getElementById('banco') ? document.getElementById('banco').value : '';
+  var gastos = n(document.getElementById('gastos') && document.getElementById('gastos').value);
+  var observaciones = document.getElementById('observaciones') ? document.getElementById('observaciones').value : '';
+  var x = 42;
+  var y = 36;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#17456b';
+  ctx.fillRect(x, y, 916, 86);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px Arial';
+  ctx.fillText('EXCOMERCAFE', x + 18, y + 25);
+  ctx.font = 'bold 29px Arial';
+  ctx.fillText('Control de venta en agro-mercado', x + 18, y + 58);
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText(fechaVista(fecha), x + 760, y + 50);
+
+  y += 112;
+  function box(label, value, bx, by, bw, bh){
+    ctx.strokeStyle = '#777';
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.fillStyle = '#444';
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText(label, bx + 8, by + 18);
+    ctx.fillStyle = '#111';
+    ctx.font = '15px Arial';
+    wrapText(ctx, String(value || ''), bx + 8, by + 40, bw - 16, 18, 2);
+  }
+  box('AGROMERCADO', accesoActual ? accesoActual.nombre : '', x, y, 330, 60);
+  box('ENCARGADO', encargado, x + 338, y, 220, 60);
+  box('BANCO', banco || 'Pendiente', x + 566, y, 170, 60);
+  box('GASTOS', money(gastos), x + 744, y, 214, 60);
+
+  y += 82;
+  var cols = [230, 105, 115, 85, 90, 90, 105, 96];
+  var headers = ['Producto','Inv. ant.','Merc. nueva','Venta','Faltante','Danado','Inv. final','Total'];
+  var rowH = 42;
+  var cx = x;
+  ctx.fillStyle = '#e8eef5';
+  ctx.fillRect(x, y, 916, rowH);
+  ctx.strokeStyle = '#777';
+  ctx.font = 'bold 13px Arial';
+  headers.forEach(function(h, i){
+    ctx.strokeRect(cx, y, cols[i], rowH);
+    ctx.fillStyle = '#111';
+    ctx.fillText(h, cx + 8, y + 26);
+    cx += cols[i];
+  });
+  y += rowH;
+  PRODUCTOS.forEach(function(prod){
+    var row = document.querySelector('tr[data-prod="' + prod.key + '"]');
+    var values = [prod.nombre, rowValue(row, 'anterior'), rowValue(row, 'nuevo'), rowValue(row, 'venta'), rowValue(row, 'faltante'), rowValue(row, 'danado'), rowValue(row, 'final'), row ? row.querySelector('.dinero').textContent : '$0.00'];
+    cx = x;
+    ctx.font = '13px Arial';
+    values.forEach(function(v, i){
+      ctx.strokeRect(cx, y, cols[i], rowH);
+      ctx.fillStyle = '#111';
+      ctx.fillText(String(v), cx + 8, y + 26);
+      cx += cols[i];
+    });
+    y += rowH;
+  });
+
+  var totalW = 916 / 3;
+  ['Ventas','Gastos','Remesa'].forEach(function(label, i){
+    var id = i === 0 ? 'total-ventas' : (i === 1 ? 'total-gastos' : 'total-remesa');
+    var value = document.getElementById(id).textContent;
+    var bx = x + i * totalW;
+    ctx.strokeRect(bx, y, totalW, 66);
+    ctx.fillStyle = '#444';
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText(label.toUpperCase(), bx + 10, y + 22);
+    ctx.fillStyle = '#111';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText(value, bx + 10, y + 50);
+  });
+  y += 88;
+  box('OBSERVACIONES', observaciones || 'Sin observaciones', x, y, 916, 105);
+  return canvas;
+}
+
+async function enviarReporteWhatsApp(){
+  var canvas = reporteCanvas();
+  var blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png', 0.95); });
+  var file = new File([blob], 'reporte-agromercado.png', { type:'image/png' });
+  if(navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
+    await navigator.share({ files:[file], title:'Reporte agromercado', text:'Reporte EXCOMERCAFE' });
+    return;
+  }
+  var url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  window.open('https://wa.me/50379285503', '_blank');
+  setMessage('submit-message', 'Se abrió la imagen y WhatsApp. Adjunta la imagen al chat.', 'ok');
+}
+
 function htmlEscape(value){
   return String(value == null ? '' : value)
     .replace(/&/g,'&amp;')
@@ -649,7 +771,11 @@ async function refrescarPortalManual(){
   setMessage('submit-message', 'Actualizando inventario e historial...', '');
   try{
     await refrescarHojaVendedor(false);
-    setMessage('submit-message', 'Actualizado. Lo digitado se mantiene.', 'ok');
+    setMessage('submit-message', 'Actualizado', 'ok');
+    setTimeout(function(){
+      var msg = document.getElementById('submit-message');
+      if(msg && msg.textContent === 'Actualizado') setMessage('submit-message', '', '');
+    }, 2200);
   }catch(error){
     setMessage('submit-message', 'No se pudo actualizar: ' + (error.message || error), 'error');
   }finally{
