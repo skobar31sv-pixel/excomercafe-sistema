@@ -14218,7 +14218,16 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function fechaReporteIgual(rowFecha, fecha){
-    return String(rowFecha || '').slice(0, 10) === String(fecha || '').slice(0, 10);
+    function normalizarFecha(value){
+      value = String(value || '').trim();
+      if(!value) return '';
+      var iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
+      var local = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if(local) return local[3] + '-' + String(local[2]).padStart(2, '0') + '-' + String(local[1]).padStart(2, '0');
+      return value.slice(0, 10);
+    }
+    return normalizarFecha(rowFecha) === normalizarFecha(fecha);
   }
 
   function pendingRowToHist(row){
@@ -14329,9 +14338,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       if (typeof window.supabaseRequest === 'function') {
-        var pendientes = await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?select=*&fecha=eq.' + encodeURIComponent(fecha) + '&estado=eq.pendiente&limit=1000');
-        window.controlVentaPendientesReportes = pendientes || [];
-        (pendientes || []).forEach(function(row){
+        var pendientes = await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?select=*&estado=eq.pendiente&limit=1000');
+        var pendientesFecha = (pendientes || []).filter(function(row){
+          return fechaReporteIgual(row && row.fecha, fecha);
+        });
+        (window.ventasPendientesCache || []).forEach(function(row){
+          if(String(row && row.estado || '').toLowerCase() !== 'pendiente') return;
+          if(!fechaReporteIgual(row && row.fecha, fecha)) return;
+          var exists = pendientesFecha.some(function(item){
+            return String(item.local_id || item.id || '') === String(row.local_id || row.id || '');
+          });
+          if(!exists) pendientesFecha.push(row);
+        });
+        window.controlVentaPendientesReportes = pendientesFecha;
+        pendientesFecha.forEach(function(row){
           var key = normText(row.agromercado || '');
           if (key && estados[key] !== 'verde') estados[key] = 'amarillo';
         });
