@@ -1169,6 +1169,7 @@
         <div class="fg">
           <label>Fecha del Reporte</label>
           <input type="date" id="agro-fecha" oninput="actualizarFecha();guardarLocal()">
+          <div id="agro-fecha-indicador" class="agro-date-indicator">Sin señales cargadas.</div>
         </div>
         <input type="hidden" id="agro-dia">
         <div class="fg" style="display:none;">
@@ -14233,6 +14234,19 @@ document.addEventListener('DOMContentLoaded', function() {
       + '.venta-matrix-table .venta-agro-name{display:block;max-width:220px;margin:0 auto;font-weight:900;overflow-wrap:anywhere;}'
       + '.control-report-filters{display:grid;grid-template-columns:1fr 170px 190px auto;gap:8px;padding:12px;border-bottom:1px solid #dbeafe;background:#f8fbff;}'
       + '.control-report-filters input,.control-report-filters select{min-height:36px;border:1px solid #bad3ea;border-radius:8px;padding:7px 9px;font-weight:700;}'
+      + '.agro-date-indicator{margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.72rem;font-weight:850;color:#48627c;}'
+      + '.agro-date-pill{display:inline-flex;align-items:center;gap:5px;border:1px solid #cfe0f1;border-radius:999px;background:#f8fbff;color:#17456b;padding:4px 8px;line-height:1;cursor:default;}'
+      + '.agro-date-pill button{border:0;background:transparent;color:inherit;font:inherit;font-weight:900;cursor:pointer;padding:0;}'
+      + '.agro-date-pill::before{content:"";width:8px;height:8px;border-radius:999px;background:#94a3b8;}'
+      + '.agro-date-pill.amarillo{background:#fef3c7;border-color:#fde68a;color:#92400e;}'
+      + '.agro-date-pill.amarillo::before{background:#f59e0b;}'
+      + '.agro-date-pill.verde{background:#dcfce7;border-color:#bbf7d0;color:#166534;}'
+      + '.agro-date-pill.verde::before{background:#16a34a;}'
+      + '.agro-date-pill.rojo{background:#fee2e2;border-color:#fecaca;color:#991b1b;}'
+      + '.agro-date-pill.rojo::before{background:#dc2626;}'
+      + '#agro-fecha.fecha-amarilla{border-color:#f59e0b !important;box-shadow:0 0 0 3px rgba(245,158,11,.16) !important;}'
+      + '#agro-fecha.fecha-verde{border-color:#16a34a !important;box-shadow:0 0 0 3px rgba(22,163,74,.14) !important;}'
+      + '#agro-fecha.fecha-roja{border-color:#dc2626 !important;box-shadow:0 0 0 3px rgba(220,38,38,.13) !important;}'
       + '@media(max-width:760px){.control-report-filters{grid-template-columns:1fr;}}';
     document.head.appendChild(style);
   }
@@ -14277,17 +14291,77 @@ document.addEventListener('DOMContentLoaded', function() {
     return document.getElementById('agro-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : fechaISOActualSistema());
   }
 
+  function fechaReporteNormalizada(value){
+    value = String(value || '').trim();
+    if(!value) return '';
+    var iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
+    var local = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(local) return local[3] + '-' + String(local[2]).padStart(2, '0') + '-' + String(local[1]).padStart(2, '0');
+    return value.slice(0, 10);
+  }
+
   function fechaReporteIgual(rowFecha, fecha){
-    function normalizarFecha(value){
-      value = String(value || '').trim();
-      if(!value) return '';
-      var iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if(iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
-      var local = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      if(local) return local[3] + '-' + String(local[2]).padStart(2, '0') + '-' + String(local[1]).padStart(2, '0');
-      return value.slice(0, 10);
+    return fechaReporteNormalizada(rowFecha) === fechaReporteNormalizada(fecha);
+  }
+
+  function setFechaControl(fecha){
+    var input = document.getElementById('agro-fecha');
+    if(!input || !fecha) return;
+    input.value = fechaReporteNormalizada(fecha);
+    input.dispatchEvent(new Event('input', { bubbles:true }));
+  }
+
+  window.setFechaControlVenta = setFechaControl;
+
+  function actualizarIndicadorFechasControl(pendientes, aprobados, rechazados){
+    var cont = document.getElementById('agro-fecha-indicador');
+    var input = document.getElementById('agro-fecha');
+    if(!cont || !input) return;
+    var actual = fechaReporteNormalizada(fechaReporteControl());
+    var fechas = {};
+    function add(rows, estado){
+      (rows || []).forEach(function(row){
+        var fecha = fechaReporteNormalizada(row && row.fecha);
+        if(!fecha) return;
+        if(!fechas[fecha]) fechas[fecha] = { fecha:fecha, pendiente:0, aprobado:0, rechazado:0 };
+        if(estado === 'pendiente') fechas[fecha].pendiente++;
+        else if(estado === 'aprobado') fechas[fecha].aprobado++;
+        else if(estado === 'rechazado') fechas[fecha].rechazado++;
+      });
     }
-    return normalizarFecha(rowFecha) === normalizarFecha(fecha);
+    add(pendientes, 'pendiente');
+    add(aprobados, 'aprobado');
+    add(rechazados, 'rechazado');
+
+    input.classList.remove('fecha-amarilla', 'fecha-verde', 'fecha-roja');
+    var hoy = fechas[actual];
+    var estadoActual = 'rojo';
+    var textoActual = 'Sin reporte en esta fecha';
+    if(hoy && hoy.pendiente){
+      estadoActual = 'amarillo';
+      textoActual = hoy.pendiente + ' pendiente(s) en esta fecha';
+      input.classList.add('fecha-amarilla');
+    } else if(hoy && hoy.aprobado){
+      estadoActual = 'verde';
+      textoActual = hoy.aprobado + ' aprobado(s) en esta fecha';
+      input.classList.add('fecha-verde');
+    } else if(hoy && hoy.rechazado){
+      estadoActual = 'rojo';
+      textoActual = hoy.rechazado + ' rechazado(s) en esta fecha';
+      input.classList.add('fecha-roja');
+    } else {
+      input.classList.add('fecha-roja');
+    }
+
+    var resumen = '<span class="agro-date-pill ' + estadoActual + '">' + esc(textoActual) + '</span>';
+    var botones = Object.keys(fechas).sort().reverse().slice(0, 10).map(function(fecha){
+      var item = fechas[fecha];
+      var cls = item.pendiente ? 'amarillo' : (item.aprobado ? 'verde' : 'rojo');
+      var label = fecha + (item.pendiente ? ' pendiente' : (item.aprobado ? ' aprobado' : ' rechazado'));
+      return '<span class="agro-date-pill ' + cls + '"><button type="button" onclick="setFechaControlVenta(&quot;' + esc(fecha) + '&quot;)">' + esc(label) + '</button></span>';
+    }).join('');
+    cont.innerHTML = resumen + botones;
   }
 
   function pendingRowToHist(row){
@@ -14442,9 +14516,16 @@ document.addEventListener('DOMContentLoaded', function() {
       if (fechaReporteIgual(row.fecha, fecha)) marcarEstadoAgro(estados, nombre, 'verde');
     });
 
+    var aprobadosIndicador = leerHistorialVentaLocal();
+    var rechazadosIndicador = [];
     try {
       if (typeof window.supabaseRequest === 'function') {
         var pendientes = await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?select=*&estado=eq.pendiente&limit=1000');
+        try {
+          rechazadosIndicador = await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?select=fecha,agromercado,estado&estado=eq.rechazado&limit=1000');
+        } catch(e) {
+          rechazadosIndicador = [];
+        }
         var pendientesFecha = (pendientes || []).filter(function(row){
           return fechaReporteIgual(row && row.fecha, fecha);
         });
@@ -14456,32 +14537,26 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           if(!exists) pendientesFecha.push(row);
         });
-        var pendientesSinFecha = (pendientes || []).filter(function(row){
-          return String(row && row.estado || '').toLowerCase() === 'pendiente';
-        });
-        (window.ventasPendientesCache || []).forEach(function(row){
-          if(String(row && row.estado || '').toLowerCase() !== 'pendiente') return;
-          var exists = pendientesSinFecha.some(function(item){
-            return String(item.local_id || item.id || '') === String(row.local_id || row.id || '');
-          });
-          if(!exists) pendientesSinFecha.push(row);
-        });
-        window.controlVentaPendientesReportes = pendientesSinFecha;
+        window.controlVentaPendientesReportes = pendientesFecha;
         (window.controlVentaPendientesReportes || []).forEach(function(row){
           marcarEstadoAgro(estados, row.agromercado || row.nombre || '', 'amarillo');
         });
-        var aprobados = await window.supabaseRequest('/rest/v1/ventas_agromercado?select=agromercado,fecha&fecha=eq.' + encodeURIComponent(fecha) + '&limit=1000');
-        (aprobados || []).forEach(function(row){
+        aprobadosIndicador = await window.supabaseRequest('/rest/v1/ventas_agromercado?select=agromercado,fecha&limit=1000');
+        (aprobadosIndicador || []).filter(function(row){
+          return fechaReporteIgual(row && row.fecha, fecha);
+        }).forEach(function(row){
           marcarEstadoAgro(estados, row.agromercado || '', 'verde');
         });
+        actualizarIndicadorFechasControl(pendientes || [], aprobadosIndicador || [], rechazadosIndicador || []);
       }
     } catch(error) {
       window.controlVentaPendientesReportes = (window.ventasPendientesCache || []).filter(function(row){
-        return String(row && row.estado || '').toLowerCase() === 'pendiente';
+        return String(row && row.estado || '').toLowerCase() === 'pendiente' && fechaReporteIgual(row && row.fecha, fecha);
       });
       window.controlVentaPendientesReportes.forEach(function(row){
         marcarEstadoAgro(estados, row.agromercado || row.nombre || '', 'amarillo');
       });
+      actualizarIndicadorFechasControl(window.ventasPendientesCache || [], aprobadosIndicador || [], rechazadosIndicador || []);
     }
 
     window.controlVentaEstadoAgros = estados;
