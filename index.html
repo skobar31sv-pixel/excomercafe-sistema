@@ -13706,6 +13706,38 @@ document.addEventListener('DOMContentLoaded', function() {
     return false;
   };
 
+  window.repararEntradasCDAInventario = function(){
+    var data = [];
+    var inv = [];
+    try { data = JSON.parse(localStorage.getItem('distribucion-cda-data') || '[]'); } catch(e) { data = []; }
+    try { inv = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(e) { inv = []; }
+    if(!data.length || !inv.length) return;
+    var porId = {};
+    data.forEach(function(row){ if(row && row.id) porId[row.id] = row; });
+    var changed = false;
+    inv.forEach(function(mov){
+      if(!mov || mov.tipo !== 'entrada-distribucion') return;
+      var id = String(mov.id || '').replace(/^entrada-/, '');
+      var dist = porId[id];
+      if(!dist || !dist.cda) return;
+      if(mov.lugar !== dist.cda || mov.agromercado !== dist.cda) {
+        mov.lugar = dist.cda;
+        mov.agromercado = dist.cda;
+        mov.distrito = dist.distrito || mov.distrito || '';
+        mov.municipio = dist.municipio || mov.municipio || '';
+        mov.supabase_synced = false;
+        changed = true;
+      }
+    });
+    if(changed){
+      localStorage.setItem('inventario-data', JSON.stringify(inv));
+      if(typeof inventarioData !== 'undefined') inventarioData = inv;
+      if(typeof refrescarInventarioEnTiempoReal === 'function') refrescarInventarioEnTiempoReal();
+      if(typeof renderResumenInventarioCDA === 'function') renderResumenInventarioCDA();
+      if(typeof renderControlVentaMatrix === 'function') renderControlVentaMatrix();
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){
       if (typeof renderDistribucionMatrices === 'function') renderDistribucionMatrices();
@@ -13891,7 +13923,10 @@ document.addEventListener('DOMContentLoaded', function() {
       id: 'entrada-' + id,
       fecha: fecha,
       ubicacion: 'agromercados',
-      lugar: [row.distrito, row.municipio, row.destino].filter(Boolean).join(', '),
+      lugar: row.destino,
+      agromercado: row.destino,
+      distrito: row.distrito || '',
+      municipio: row.municipio || '',
       tipo: 'entrada-distribucion',
       referencia: 'Distribución ' + origen,
       arroz: row.arroz,
@@ -14003,6 +14038,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){
+      if (typeof window.repararEntradasCDAInventario === 'function') window.repararEntradasCDAInventario();
       renderResumenInventarioTiendona();
       renderResumenInventarioCDA();
     }, 350);
