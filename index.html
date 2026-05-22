@@ -14035,18 +14035,28 @@ document.addEventListener('DOMContentLoaded', function() {
     var style = document.createElement('style');
     style.id = 'control-venta-reportes-styles';
     style.textContent = ''
-      + '#tbody-control-venta-fija tr.venta-reporte-rojo td{background:#fff1f2;}'
-      + '#tbody-control-venta-fija tr.venta-reporte-amarillo td{background:#fffbeb;}'
-      + '#tbody-control-venta-fija tr.venta-reporte-verde td{background:#f0fdf4;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-rojo td{background:#fff7f7 !important;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-amarillo td{background:#fffbea !important;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-verde td{background:#f4fff7 !important;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-rojo input{background:#fffafa !important;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-amarillo input{background:#fffdf2 !important;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-verde input{background:#f8fffa !important;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-rojo .venta-agro-cell{box-shadow:inset 4px 0 #fecaca;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-amarillo .venta-agro-cell{box-shadow:inset 4px 0 #fde68a;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-verde .venta-agro-cell{box-shadow:inset 4px 0 #bbf7d0;}'
       + '.venta-reporte-badge{display:inline-flex;margin-top:5px;border-radius:999px;padding:3px 8px;font-size:.68rem;font-weight:900;text-transform:uppercase;}'
       + '.venta-reporte-badge.rojo{background:#fee2e2;color:#991b1b;}'
       + '.venta-reporte-badge.amarillo{background:#fef3c7;color:#92400e;}'
       + '.venta-reporte-badge.verde{background:#dcfce7;color:#166534;}'
       + '.control-report-history .card-header{align-items:center;}'
       + '.control-report-history table td,.control-report-history table th{white-space:nowrap;}'
+      + '.venta-matrix-table{table-layout:auto;}'
       + '.venta-matrix-table .venta-cell,.venta-matrix-table .venta-row-total{width:76px;min-width:76px;max-width:76px;text-align:center;padding-left:6px;padding-right:6px;}'
       + '.venta-matrix-table th.venta-sub-head{min-width:76px;}'
-      + '.venta-matrix-table .venta-agromercado-col,.venta-matrix-table .venta-agro-cell{min-width:230px;}';
+      + '.venta-matrix-table .venta-agromercado-col,.venta-matrix-table .venta-agro-cell{position:sticky;left:0;z-index:4;width:290px;min-width:290px;max-width:290px;}'
+      + '.venta-matrix-table .venta-agromercado-col{z-index:7;background:#17456b !important;}'
+      + '.venta-matrix-table .venta-agro-cell{text-align:center;vertical-align:middle;white-space:normal;line-height:1.12;padding:10px 12px;}'
+      + '.venta-matrix-table .venta-agro-name{display:block;max-width:250px;margin:0 auto;font-weight:900;overflow-wrap:anywhere;}';
     document.head.appendChild(style);
   }
 
