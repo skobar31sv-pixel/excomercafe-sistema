@@ -1063,7 +1063,6 @@
       <span>🌾🔴🟡🌽 &nbsp;Control de Venta en Agromercado</span>
       <div class="flex gap-8 items-center flex-wrap">
         <button class="btn btn-sm btn-secondary" onclick="limpiarFormulario()" style="display:none;">🔄 Nuevo día</button>
-        <button type="button" class="btn btn-sm btn-primary" onclick="imprimirTablaPorTitulo('Control de Venta en Agromercado', '#tabla-control')">Imprimir</button>
         <button class="btn btn-sm btn-secondary" onclick="document.getElementById(&#39;excel-import-input&#39;).click()">📂 Importar Excel</button>
         <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarExcel(this)">
         <button class="btn btn-sm btn-accent" onclick="exportarExcel(&#39;hist&#39;)">📥 Exportar Excel</button>
@@ -3200,6 +3199,10 @@ window.aprobarVentaPendiente = async function(index){
     if(typeof showToast === 'function') showToast('Envío aprobado.');
     cargarVentasPendientes();
     if(typeof renderHistorial === 'function') renderHistorial();
+    if(typeof expandirHistorialControlVenta === 'function') expandirHistorialControlVenta();
+    if(typeof renderHistorialReportesVentaControl === 'function') renderHistorialReportesVentaControl();
+    if(typeof actualizarEstadoReportesAgromercado === 'function') actualizarEstadoReportesAgromercado();
+    if(typeof renderControlVentaMatrix === 'function') renderControlVentaMatrix();
   } catch(error) {
     alert('No se pudo aprobar: ' + (error.message || error));
   }
@@ -5716,6 +5719,15 @@ function backupUsuarioActualNombre(){
     if(window.authSession) return authUserNameFromSession(window.authSession);
   }catch(e){}
   return 'Jorge Escobar';
+}
+
+function expandirHistorialControlVenta(){
+  var cont = document.getElementById('historial-registros-content');
+  var icon = document.getElementById('historial-toggle-icon');
+  var card = cont && cont.closest('.card');
+  if(card) card.style.display = '';
+  if(cont) cont.style.display = 'block';
+  if(icon) icon.textContent = '▲';
 }
 
 function backupPermiteAccionAdmin(){
@@ -13994,6 +14006,153 @@ document.addEventListener('DOMContentLoaded', function() {
     return totals;
   }
 
+  function ensureControlVentaStyles(){
+    if (document.getElementById('control-venta-reportes-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'control-venta-reportes-styles';
+    style.textContent = ''
+      + '#tbody-control-venta-fija tr.venta-reporte-rojo td{background:#fff1f2;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-amarillo td{background:#fffbeb;}'
+      + '#tbody-control-venta-fija tr.venta-reporte-verde td{background:#f0fdf4;}'
+      + '.venta-reporte-badge{display:inline-flex;margin-top:5px;border-radius:999px;padding:3px 8px;font-size:.68rem;font-weight:900;text-transform:uppercase;}'
+      + '.venta-reporte-badge.rojo{background:#fee2e2;color:#991b1b;}'
+      + '.venta-reporte-badge.amarillo{background:#fef3c7;color:#92400e;}'
+      + '.venta-reporte-badge.verde{background:#dcfce7;color:#166534;}'
+      + '.control-report-history .card-header{align-items:center;}'
+      + '.control-report-history table td,.control-report-history table th{white-space:nowrap;}';
+    document.head.appendChild(style);
+  }
+
+  function estadoReporteLabel(estado){
+    if (estado === 'verde') return 'Aprobado';
+    if (estado === 'amarillo') return 'Pendiente';
+    return 'Sin reporte';
+  }
+
+  function estadoReporteClass(estado){
+    if (estado === 'verde') return 'venta-reporte-verde';
+    if (estado === 'amarillo') return 'venta-reporte-amarillo';
+    return 'venta-reporte-rojo';
+  }
+
+  function estadoReporteActual(nombre){
+    var key = normText(nombre);
+    return (window.controlVentaEstadoAgros && window.controlVentaEstadoAgros[key]) || 'rojo';
+  }
+
+  function fechaReporteControl(){
+    return document.getElementById('agro-fecha')?.value || (typeof fechaHoy === 'function' ? fechaHoy() : fechaISOActualSistema());
+  }
+
+  function leerHistorialVentaLocal(){
+    try { return JSON.parse(localStorage.getItem('exc_agro_hist') || '[]'); } catch(e) { return []; }
+  }
+
+  function ensureHistorialReportesControl(){
+    if (document.getElementById('control-venta-reportes-card')) return;
+    var target = document.getElementById('control-venta-matrix-card') || document.querySelector('#tab-agro .card');
+    if (!target || !target.parentNode) return;
+    var card = document.createElement('div');
+    card.className = 'card control-report-history';
+    card.id = 'control-venta-reportes-card';
+    card.style.marginTop = '16px';
+    card.innerHTML = ''
+      + '<div class="card-header">'
+      + '<span>Historial de reportes de venta</span>'
+      + '<div class="flex gap-8 items-center flex-wrap">'
+      + '<span id="control-venta-reportes-status" class="dist-badge dist-badge-tiendona">0 reportes</span>'
+      + '<button type="button" class="btn btn-sm btn-secondary" onclick="toggleHistorialReportesVentaControl()">Contraer</button>'
+      + '<button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); imprimirTablaPorTitulo(&quot;Historial de reportes de venta&quot;, &quot;#control-venta-reportes-table&quot;)">Imprimir</button>'
+      + '</div></div>'
+      + '<div class="card-body" id="control-venta-reportes-content" style="overflow-x:auto;padding:0;">'
+      + '<table class="tbl" id="control-venta-reportes-table">'
+      + '<thead><tr><th>Fecha</th><th>Estado</th><th>Agromercado</th><th>Encargado</th><th>Ventas</th><th>Gastos</th><th>Remesa</th><th>Banco</th><th>Observaciones</th></tr></thead>'
+      + '<tbody id="control-venta-reportes-body"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:18px;">Sin reportes.</td></tr></tbody>'
+      + '</table></div>';
+    target.parentNode.insertBefore(card, target.nextSibling);
+  }
+
+  window.toggleHistorialReportesVentaControl = function(){
+    var content = document.getElementById('control-venta-reportes-content');
+    if (!content) return;
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.renderHistorialReportesVentaControl = function(){
+    ensureHistorialReportesControl();
+    var tbody = document.getElementById('control-venta-reportes-body');
+    var status = document.getElementById('control-venta-reportes-status');
+    if (!tbody) return;
+    var rows = leerHistorialVentaLocal().slice().sort(function(a, b){
+      return String(b.fecha || '').localeCompare(String(a.fecha || '')) || String(b.timestamp || b.creado_en || '').localeCompare(String(a.timestamp || a.creado_en || ''));
+    });
+    if (status) status.textContent = rows.length + ' reportes';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:18px;">Sin reportes de venta guardados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(function(row){
+      var estado = row.estado_revision || row.estado || 'aprobado';
+      return '<tr>'
+        + '<td>' + esc(typeof fechaVistaSistema === 'function' ? fechaVistaSistema(row.fecha) : row.fecha || '') + '</td>'
+        + '<td><span class="venta-reporte-badge ' + (estado === 'pendiente' ? 'amarillo' : (estado === 'rechazado' ? 'rojo' : 'verde')) + '">' + esc(estado) + '</span></td>'
+        + '<td><strong>' + esc(row.agromercado || row.nombre || '') + '</strong></td>'
+        + '<td>' + esc(row.encargado || row.usuarioCierre || row.usuario || '') + '</td>'
+        + '<td>' + money(row.ventas) + '</td>'
+        + '<td>' + money(row.gastos) + '</td>'
+        + '<td>' + money(row.remesa) + '</td>'
+        + '<td>' + esc(row.banco || 'Pendiente') + '</td>'
+        + '<td>' + esc(row.observaciones || '') + '</td>'
+        + '</tr>';
+    }).join('');
+  };
+
+  window.actualizarEstadoReportesAgromercado = async function(){
+    ensureControlVentaStyles();
+    var fecha = fechaReporteControl();
+    var estados = {};
+    getAllAgromercadosVenta().forEach(function(agro){
+      estados[normText(agro.nombre)] = 'rojo';
+    });
+
+    leerHistorialVentaLocal().forEach(function(row){
+      var nombre = row.agromercado || row.nombre || '';
+      if (row.fecha === fecha && estados[normText(nombre)]) estados[normText(nombre)] = 'verde';
+    });
+
+    try {
+      if (typeof window.supabaseRequest === 'function') {
+        var pendientes = await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?select=agromercado,fecha,estado&fecha=eq.' + encodeURIComponent(fecha) + '&estado=eq.pendiente&limit=1000');
+        (pendientes || []).forEach(function(row){
+          var key = normText(row.agromercado || '');
+          if (key && estados[key] !== 'verde') estados[key] = 'amarillo';
+        });
+        var aprobados = await window.supabaseRequest('/rest/v1/ventas_agromercado?select=agromercado,fecha&fecha=eq.' + encodeURIComponent(fecha) + '&limit=1000');
+        (aprobados || []).forEach(function(row){
+          var key = normText(row.agromercado || '');
+          if (key) estados[key] = 'verde';
+        });
+      }
+    } catch(error) {}
+
+    window.controlVentaEstadoAgros = estados;
+    aplicarEstadosReportesAgromercado();
+  };
+
+  function aplicarEstadosReportesAgromercado(){
+    document.querySelectorAll('#tbody-control-venta-fija tr[data-agro]').forEach(function(row){
+      var estado = estadoReporteActual(row.getAttribute('data-agro') || '');
+      row.classList.remove('venta-reporte-rojo', 'venta-reporte-amarillo', 'venta-reporte-verde');
+      row.classList.add(estadoReporteClass(estado));
+      var cell = row.querySelector('.venta-agro-cell');
+      if (cell) {
+        var old = cell.querySelector('.venta-reporte-badge');
+        if (old) old.remove();
+        cell.insertAdjacentHTML('beforeend', '<span class="venta-reporte-badge ' + (estado === 'verde' ? 'verde' : (estado === 'amarillo' ? 'amarillo' : 'rojo')) + '">' + estadoReporteLabel(estado) + '</span>');
+      }
+    });
+  }
+
   function captureDraft(){
     var draft = {};
     document.querySelectorAll('#tbody-control-venta-fija tr[data-agro]').forEach(function(row){
@@ -14017,6 +14176,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function ensureControlVentaMatrix(){
+    ensureControlVentaStyles();
     var tableWrap = document.querySelector('#tab-agro .tbl-wrap');
     if (!tableWrap || document.getElementById('control-venta-matrix-card')) return;
 
@@ -14069,6 +14229,7 @@ document.addEventListener('DOMContentLoaded', function() {
     tbody.innerHTML = agros.map(function(agro){
       var meta = findAgroMeta(agro.nombre);
       var stock = getStockForAgro(agro.nombre);
+      var estado = estadoReporteActual(agro.nombre);
       var productCells = VENTA_PRODUCTS.map(function(p){
         var saved = (draft[agro.nombre] && draft[agro.nombre][p.key]) || {};
         var ventas = saved.ventas || 0;
@@ -14085,15 +14246,20 @@ document.addEventListener('DOMContentLoaded', function() {
           + cellHtml(p, VENTA_FIELDS[5], diferencia);
       }).join('');
 
-      return '<tr data-agro="' + esc(agro.nombre) + '" data-tipo="' + esc(agro.tipo) + '" data-distrito="' + esc(meta.distrito) + '" data-municipio="' + esc(meta.municipio) + '">'
+      return '<tr class="' + estadoReporteClass(estado) + '" data-agro="' + esc(agro.nombre) + '" data-tipo="' + esc(agro.tipo) + '" data-distrito="' + esc(meta.distrito) + '" data-municipio="' + esc(meta.municipio) + '">'
         + '<td class="dist-destino-cell venta-municipio-cell"><span>' + esc(meta.distrito || agro.tipo) + '</span></td>'
-        + '<td class="dist-destino-cell venta-agro-cell"><span class="venta-agro-name">' + esc(agro.nombre) + '</span></td>'
+        + '<td class="dist-destino-cell venta-agro-cell"><span class="venta-agro-name">' + esc(agro.nombre) + '</span><span class="venta-reporte-badge ' + (estado === 'verde' ? 'verde' : (estado === 'amarillo' ? 'amarillo' : 'rojo')) + '">' + estadoReporteLabel(estado) + '</span></td>'
         + productCells
         + '<td><input class="dist-qty venta-row-total" readonly value="0"></td>'
         + '</tr>';
     }).join('');
     updateVentaMatrixTotals();
+    ensureHistorialReportesControl();
+    renderHistorialReportesVentaControl();
+    aplicarEstadosReportesAgromercado();
   }
+
+  window.renderControlVentaMatrix = renderControlVentaMatrix;
 
   function rowNumber(row, prodKey, field){
     var input = row.querySelector('input[data-prod="' + prodKey + '"][data-field="' + field + '"]');
@@ -14298,6 +14464,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setVal('campo-ventas', money(totalVenta));
     setVal('campo-remesa', money(Math.max(0, totalVenta - gastos)));
     if (typeof renderHistorial === 'function') renderHistorial();
+    if (typeof renderHistorialReportesVentaControl === 'function') renderHistorialReportesVentaControl();
+    if (typeof actualizarEstadoReportesAgromercado === 'function') actualizarEstadoReportesAgromercado();
     if (typeof refrescarInventarioEnTiempoReal === 'function') refrescarInventarioEnTiempoReal();
     clearVentaMatrix();
     showAlert('alert-agro', 'Datos tipo Digitar guardados y descontados del inventario.', 'ok');
@@ -14311,17 +14479,29 @@ document.addEventListener('DOMContentLoaded', function() {
     if (event.target && event.target.id === 'campo-gastos') {
       updateVentaMatrixTotals();
     }
+    if (event.target && event.target.id === 'agro-fecha') {
+      setTimeout(function(){
+        if (typeof renderControlVentaMatrix === 'function') renderControlVentaMatrix();
+        if (typeof actualizarEstadoReportesAgromercado === 'function') actualizarEstadoReportesAgromercado();
+      }, 30);
+    }
   });
 
   document.addEventListener('DOMContentLoaded', function(){
-    setTimeout(renderControlVentaMatrix, 350);
+    setTimeout(function(){
+      renderControlVentaMatrix();
+      actualizarEstadoReportesAgromercado();
+    }, 350);
   });
 
   var previousSwitchTabVenta = window.switchTab;
   window.switchTab = function(tabId, btn){
     var result = previousSwitchTabVenta ? previousSwitchTabVenta.apply(this, arguments) : undefined;
     if (tabId === 'tab-agro') {
-      setTimeout(renderControlVentaMatrix, 60);
+      setTimeout(function(){
+        renderControlVentaMatrix();
+        actualizarEstadoReportesAgromercado();
+      }, 60);
     }
     return result;
   };
