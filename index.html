@@ -3037,6 +3037,8 @@ function revisionBancoSelectHtml(index, selected){
   selected = revisionBancoNombre(selected);
   var options = ['<option value="" ' + (!selected ? 'selected' : '') + '>Pendiente / sin banco</option>'];
   revisionBancosDisponibles(selected).forEach(function(banco){
+    banco = revisionBancoNombre(banco);
+    if(!banco) return;
     var safe = revisionEscapeHtml(banco);
     options.push('<option value="' + safe + '" ' + (banco === selected ? 'selected' : '') + '>' + safe + '</option>');
   });
@@ -3054,6 +3056,16 @@ function revisionBancoHtml(index, selected){
 function revisionBancoSeleccionado(index, fallback){
   var select = document.getElementById('revision-banco-' + index);
   return revisionBancoNombre(select ? select.value : fallback);
+}
+
+function revisionSanitizarBancoSelects(){
+  document.querySelectorAll('.review-bank-select').forEach(function(select){
+    Array.from(select.options).forEach(function(option){
+      if(!revisionBancoNombre(option.value) && option.value !== '') option.remove();
+      else if(!revisionBancoNombre(option.textContent) && option.value !== '') option.remove();
+    });
+    if(!revisionBancoNombre(select.value)) select.value = '';
+  });
 }
 
 function revisionProductosHtml(payload){
@@ -3115,6 +3127,7 @@ function renderVentasPendientes(rows){
       + '</div>'
       + '</article>';
   }).join('');
+  revisionSanitizarBancoSelects();
 }
 
 window.cargarVentasPendientes = async function(){
