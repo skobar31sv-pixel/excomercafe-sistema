@@ -7093,6 +7093,16 @@ window.obtenerDestinosInventarioPorTipo = function(){
   var grupos = { TIENDONA: [], CDA: [] };
   var vistos = { TIENDONA: {}, CDA: {} };
 
+  function agregarDirecto(nombre, tipo){
+    nombre = String(nombre || '').trim();
+    if (!nombre) return;
+    tipo = tipo === 'CDA' ? 'CDA' : 'TIENDONA';
+    var key = normalizarNombre(nombre);
+    if (vistos[tipo][key]) return;
+    vistos[tipo][key] = true;
+    grupos[tipo].push(nombre);
+  }
+
   function agregar(nombre, tipo){
     nombre = String(nombre || '').trim();
     if (!nombre) return;
@@ -7100,14 +7110,11 @@ window.obtenerDestinosInventarioPorTipo = function(){
     if (tipo === 'CDA') {
       var oficiales = agromercadosOficialesCdaPara(nombre);
       if (oficiales.length && esNombreGrupoCda(nombre)) {
-        oficiales.forEach(function(oficial){ agregar(oficial.nombre, 'CDA'); });
+        oficiales.forEach(function(oficial){ agregarDirecto(oficial.nombre, 'CDA'); });
         return;
       }
     }
-    var key = normalizarNombre(nombre);
-    if (vistos[tipo][key]) return;
-    vistos[tipo][key] = true;
-    grupos[tipo].push(nombre);
+    agregarDirecto(nombre, tipo);
   }
 
   function esNombreGrupoCda(nombre){
