@@ -94,6 +94,9 @@ var accesoActual = null;
 var ACCESS_STORAGE_KEY = 'agromercado_portal_access_v1';
 var PENDING_STORAGE_KEY = 'agromercado_portal_pending_v1';
 var hojaBloqueada = false;
+var refreshTimer = null;
+var refreshRunning = false;
+var REFRESH_MS = 20000;
 
 function palabraClave(nombre){
   var ignorar = { EL:true, LA:true, LAS:true, LOS:true, DE:true, DEL:true, BO:true, BARRIO:true, PARQUE:true };
@@ -278,6 +281,9 @@ function setHojaBloqueada(locked, info){
   if(hojaBloqueada){
     var fecha = info && info.fecha ? (' del ' + fechaVista(info.fecha)) : '';
     setMessage('submit-message', 'Reporte enviado y pendiente de revision' + fecha + '. No se puede editar ni enviar otro hasta que sea aprobado o rechazado.', 'ok');
+  }else{
+    var msg = document.getElementById('submit-message');
+    if(msg && /Reporte enviado y pendiente/i.test(msg.textContent || '')) setMessage('submit-message', '', '');
   }
 }
 
@@ -382,14 +388,13 @@ async function validarAcceso(){
   document.getElementById('agromercado-label').textContent = match.nombre;
   document.getElementById('fecha').value = hoy();
   await aplicarEncargadoAgromercado(match.nombre);
-  await cargarValoresInicialesAgromercado(match.nombre);
-  calcularTotales();
-  await cargarHistorialVentas(match.nombre);
-  await revisarBloqueoPendiente(match.nombre);
+  await refrescarHojaVendedor(true);
+  iniciarAutoRefresh();
 }
 
 function salirPortal(){
   accesoActual = null;
+  detenerAutoRefresh();
   limpiarAccesoPortal();
   document.getElementById('sales-form').classList.add('hidden');
   document.getElementById('access-panel').classList.remove('hidden');
@@ -474,7 +479,6 @@ function buildPrintHtml(){
 }
 
 async function revisarBloqueoPendiente(agromercado){
-  setHojaBloqueada(false);
   var local = leerPendienteLocal(agromercado);
   try{
     var response = await fetch(SUPABASE_CONFIG.url + '/rest/v1/rpc/portal_agromercado_pendiente', {
@@ -494,12 +498,14 @@ async function revisarBloqueoPendiente(agromercado){
         setHojaBloqueada(true, info);
       }else{
         limpiarPendienteLocal();
+        setHojaBloqueada(false);
       }
       return;
     }
   }catch(e){}
 
   if(local) setHojaBloqueada(true, local);
+  else setHojaBloqueada(false);
 }
 
 function productoValueFromPayload(map, key){
@@ -686,6 +692,43 @@ async function cargarValoresInicialesAgromercado(agromercado){
   });
 }
 
+async function refrescarHojaVendedor(silent){
+  if(!accesoActual || refreshRunning) return;
+  refreshRunning = true;
+  try{
+    var fechaHoy = hoy();
+    var fechaInput = document.getElementById('fecha');
+    var fechaVisible = document.getElementById('fecha-visible');
+    if(fechaInput && fechaInput.value !== fechaHoy) fechaInput.value = fechaHoy;
+    if(fechaVisible) fechaVisible.textContent = fechaVista(fechaHoy);
+
+    if(!silent) setMessage('access-message', '', '');
+    await aplicarEncargadoAgromercado(accesoActual.nombre);
+    await cargarValoresInicialesAgromercado(accesoActual.nombre);
+    calcularTotales();
+    await cargarHistorialVentas(accesoActual.nombre);
+    await revisarBloqueoPendiente(accesoActual.nombre);
+  }catch(error){
+    if(!silent) setMessage('submit-message', 'No se pudo refrescar automaticamente. Reintentando...', 'error');
+  }finally{
+    refreshRunning = false;
+  }
+}
+
+function iniciarAutoRefresh(){
+  detenerAutoRefresh();
+  refreshTimer = setInterval(function(){
+    refrescarHojaVendedor(true);
+  }, REFRESH_MS);
+}
+
+function detenerAutoRefresh(){
+  if(refreshTimer){
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
 function leerProductos(){
   var ventasUnidades = {};
   var inventarioInicio = {};
@@ -784,6 +827,7 @@ async function enviarControl(event){
     setHojaBloqueada(true, { fecha: payload.fecha });
     calcularTotales();
     await cargarHistorialVentas(accesoActual.nombre);
+    await refrescarHojaVendedor(true);
   }catch(error){
     setMessage('submit-message', 'No se pudo enviar: ' + error.message, 'error');
   }
