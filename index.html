@@ -384,6 +384,61 @@
     font-size:.72rem;
     cursor:pointer;
   }
+  .chat-emoji-picker{
+    display:none;
+    grid-template-columns:repeat(8, 1fr);
+    gap:5px;
+    padding:8px;
+    border-bottom:1px solid var(--border-color,#d6e7f7);
+    background:#fff;
+  }
+  .chat-emoji-picker.open{display:grid;}
+  .chat-emoji-picker button{
+    border:1px solid #dbeafe;
+    background:#f8fafc;
+    border-radius:7px;
+    min-height:30px;
+    font-size:1.05rem;
+    cursor:pointer;
+  }
+  .codex-mini-dock{
+    display:none;
+    justify-content:flex-end;
+    gap:8px;
+    align-items:center;
+    padding:8px 14px;
+    background:#eef6ff;
+    border-bottom:1px solid #cfe0f1;
+  }
+  .codex-mini-dock.radio-visible{display:flex;}
+  .radio-supra-player{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-height:34px;
+    padding:5px 8px;
+    border:1px solid #bfdbfe;
+    border-radius:9px;
+    background:#fff;
+    color:#0f2f4d;
+    font-size:.75rem;
+    font-weight:900;
+  }
+  .radio-supra-player button{
+    border:0;
+    border-radius:7px;
+    background:#17456b;
+    color:#fff;
+    min-height:28px;
+    padding:4px 9px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .radio-supra-player a{
+    color:#17456b;
+    font-weight:900;
+    text-decoration:none;
+  }
   .chat-messages{
     flex:1 1 auto;
     min-height:170px;
@@ -431,6 +486,10 @@
     text-align:center;
     font-size:.78rem;
     color:#475569;
+  }
+  @media(max-width:720px){
+    .codex-mini-dock{padding:7px 8px;}
+    .radio-supra-player{justify-content:space-between;}
   }
   .review-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .review-list{display:grid;gap:12px;}
@@ -905,6 +964,14 @@
     <button class="hbtn hbtn-settings" onclick="openSettings()">⚙️ Ajustes</button>
   </div>
 </header>
+<div class="codex-mini-dock" id="codex-mini-dock">
+  <div class="radio-supra-player">
+    <span>Radio Supra 90.5</span>
+    <button type="button" id="radio-supra-btn" onclick="toggleRadioSupra()">Play</button>
+    <a href="https://radiosupra905.com/" target="_blank" rel="noopener">Abrir</a>
+    <audio id="radio-supra-audio" preload="none"></audio>
+  </div>
+</div>
 <input type="file" id="logo-input" accept="image/*" onchange="cambiarLogo(this)" style="display:none;">
 
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
@@ -943,8 +1010,27 @@
     </select>
   </div>
   <div class="chat-tools">
+    <button type="button" onclick="toggleEmojiPicker()">😊 Emojis</button>
     <button type="button" onclick="document.getElementById('chat-image-input').click()">Imagen</button>
     <button type="button" onclick="borrarTodosChat()">Borrar mis mensajes</button>
+  </div>
+  <div class="chat-emoji-picker" id="chat-emoji-picker">
+    <button type="button" onclick="insertarEmojiChat('😀')">😀</button>
+    <button type="button" onclick="insertarEmojiChat('😅')">😅</button>
+    <button type="button" onclick="insertarEmojiChat('😂')">😂</button>
+    <button type="button" onclick="insertarEmojiChat('😎')">😎</button>
+    <button type="button" onclick="insertarEmojiChat('❤️')">❤️</button>
+    <button type="button" onclick="insertarEmojiChat('👍')">👍</button>
+    <button type="button" onclick="insertarEmojiChat('🙏')">🙏</button>
+    <button type="button" onclick="insertarEmojiChat('🔥')">🔥</button>
+    <button type="button" onclick="insertarEmojiChat('✅')">✅</button>
+    <button type="button" onclick="insertarEmojiChat('📦')">📦</button>
+    <button type="button" onclick="insertarEmojiChat('🚚')">🚚</button>
+    <button type="button" onclick="insertarEmojiChat('💰')">💰</button>
+    <button type="button" onclick="insertarEmojiChat('📊')">📊</button>
+    <button type="button" onclick="insertarEmojiChat('☕')">☕</button>
+    <button type="button" onclick="insertarEmojiChat('🎵')">🎵</button>
+    <button type="button" onclick="insertarEmojiChat('🚀')">🚀</button>
   </div>
   <div class="chat-messages" id="chat-messages">Cargando chat...</div>
   <div class="chat-send">
@@ -2683,6 +2769,7 @@ window.AUTH_STORAGE_KEY = 'excomercafe_auth_session';
 window.AUTH_REMEMBER_KEY = 'excomercafe_auth_remember';
 window.REGISTRATION_KEY = 'EXCOMERCAFE2026';
 window.OWNER_USER_ALIASES = ['skobar', 'jorge', 'jalahala'];
+window.RADIO_SUPRA_USERS = ['skobar@excomercafe.local', 'jorge@excomercafe.local', 'jalahala@excomercafe.local'];
 window.authSession = null;
 window.authRefreshPromise = null;
 
@@ -2709,6 +2796,30 @@ window.esDuenoSistema = function(sessionOrName){
 window.esAdminSistema = function(sessionOrName){
   return window.esDuenoSistema(sessionOrName);
 };
+
+function authUserEmailFromSession(session){
+  var user = session && session.user ? session.user : {};
+  return normalizarUsuarioRol(user.email || usuarioToEmail(authUserNameFromSession(session)));
+}
+
+function usuarioPuedeVerRadio(session){
+  if(!session) return false;
+  var email = authUserEmailFromSession(session);
+  return window.RADIO_SUPRA_USERS.indexOf(email) >= 0;
+}
+
+function actualizarRadioSupraVisible(session){
+  var dock = document.getElementById('codex-mini-dock');
+  if(!dock) return;
+  var visible = usuarioPuedeVerRadio(session || window.authSession);
+  dock.classList.toggle('radio-visible', visible);
+  if(!visible) {
+    var audio = document.getElementById('radio-supra-audio');
+    var btn = document.getElementById('radio-supra-btn');
+    if(audio) audio.pause();
+    if(btn) btn.textContent = 'Play';
+  }
+}
 
 function guardarSesionAuth(session){
   window.authSession = session || null;
@@ -2812,6 +2923,7 @@ function aplicarSesionAuth(session){
   }
   var overlay = document.getElementById('auth-overlay');
   if(overlay) overlay.classList.toggle('auth-hidden', !!session);
+  actualizarRadioSupraVisible(session);
   if(typeof actualizarUsuarioActualUI === 'function') actualizarUsuarioActualUI();
 }
 
@@ -2953,6 +3065,7 @@ window.crearUsuarioSistema = async function(event){
 window.logoutUsuarioSistema = function(){
   guardarSesionAuth(null);
   window.usuarioActual = { nombre:'Usuario', rol:'usuario', admin:false, dueno:false };
+  actualizarRadioSupraVisible(null);
   localStorage.removeItem(window.AUTH_REMEMBER_KEY);
   var overlay = document.getElementById('auth-overlay');
   if(overlay) overlay.classList.remove('auth-hidden');
@@ -3475,6 +3588,44 @@ function actualizarUsuarioActualUI(){
   var el = document.getElementById('chat-current-user');
   if (el) el.textContent = 'Usuario: ' + chatName();
 }
+
+window.toggleEmojiPicker = function(){
+  var picker = document.getElementById('chat-emoji-picker');
+  if(picker) picker.classList.toggle('open');
+};
+
+window.insertarEmojiChat = function(emoji){
+  var input = document.getElementById('chat-message-input');
+  if(!input) return;
+  var start = input.selectionStart == null ? input.value.length : input.selectionStart;
+  var end = input.selectionEnd == null ? input.value.length : input.selectionEnd;
+  var before = input.value.slice(0, start);
+  var after = input.value.slice(end);
+  input.value = before + emoji + after;
+  var next = start + emoji.length;
+  input.focus();
+  try { input.setSelectionRange(next, next); } catch(e) {}
+};
+
+window.toggleRadioSupra = function(){
+  var audio = document.getElementById('radio-supra-audio');
+  var btn = document.getElementById('radio-supra-btn');
+  if(!audio || !btn) return;
+  if(!audio.src) {
+    audio.src = 'https://stream-52.zeno.fm/cpoqmejvb7ftv?zs=r9mYF1zHSD-C0In5SO_XUg';
+  }
+  if(audio.paused) {
+    audio.play().then(function(){
+      btn.textContent = 'Pausa';
+    }).catch(function(){
+      btn.textContent = 'Play';
+      if(typeof showToast === 'function') showToast('La radio no se pudo reproducir aqui. Usa Abrir.');
+    });
+  } else {
+    audio.pause();
+    btn.textContent = 'Play';
+  }
+};
 
 function chatEscape(value){
   return String(value == null ? '' : value)
