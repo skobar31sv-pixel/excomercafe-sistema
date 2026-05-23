@@ -169,7 +169,7 @@
     box-shadow:0 0 0 2px rgba(34,197,94,.18);
   }
   .auth-user-badge.owner::after{
-    content:"Dueño";
+    content:"Admin";
     display:inline-flex;
     align-items:center;
     min-height:18px;
@@ -2808,7 +2808,7 @@ function aplicarSesionAuth(session){
   if(badge) {
     badge.textContent = esDueno ? (nombre + ' - Administrador') : nombre;
     badge.classList.toggle('owner', esDueno);
-    badge.title = esDueno ? 'Dueño absoluto / Administrador' : 'Usuario activo';
+    badge.title = esDueno ? 'Administrador' : 'Usuario activo';
   }
   var overlay = document.getElementById('auth-overlay');
   if(overlay) overlay.classList.toggle('auth-hidden', !!session);
