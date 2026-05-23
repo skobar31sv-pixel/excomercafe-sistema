@@ -2799,7 +2799,7 @@ window.esAdminSistema = function(sessionOrName){
 
 function authUserEmailFromSession(session){
   var user = session && session.user ? session.user : {};
-  return normalizarUsuarioRol(user.email || usuarioToEmail(authUserNameFromSession(session)));
+  return String(user.email || usuarioToEmail(authUserNameFromSession(session)) || '').trim().toLowerCase();
 }
 
 function usuarioPuedeVerRadio(session){
