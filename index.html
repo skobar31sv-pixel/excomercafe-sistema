@@ -894,16 +894,16 @@
     <button type="button" class="btn btn-sm" onclick="closeMobileSidebar()">Cerrar</button>
   </div>
   <nav class="sidebar-nav" aria-label="Navegación móvil">
-    <button class="tab-btn active" onclick="switchTab('tab-inicio', this); closeMobileSidebar()">🏠 Inicio</button>
-    <button class="tab-btn" onclick="switchTab('tab-agro', this); closeMobileSidebar()">🌾 Control de Venta Agromercado</button>
-    <button class="tab-btn" onclick="switchTab('tab-descargas', this); closeMobileSidebar()">🚚 Distribución Tiendona</button>
-    <button class="tab-btn" onclick="switchTab('tab-distribucion', this); closeMobileSidebar()">🚚 Distribución CDA</button>
-    <button class="tab-btn" onclick="switchTab('tab-devoluciones', this); closeMobileSidebar()">🔄 Devoluciones</button>
-    <button class="tab-btn" onclick="switchTab('tab-inventario', this); closeMobileSidebar()">📦 Control de Inventario</button>
-    <button class="tab-btn" onclick="switchTab('tab-bancos', this); closeMobileSidebar()">🏦 Reporte Banco</button>
-    <button class="tab-btn" onclick="switchTab('tab-datos', this); closeMobileSidebar()">📍 Datos y Ubicación</button>
-    <button class="tab-btn" onclick="switchTab('tab-recibos', this); closeMobileSidebar()">📊 Reportes</button>
-    <button class="tab-btn" onclick="switchTab('tab-revision', this); closeMobileSidebar()">✅ Revisión</button>
+    <a class="tab-btn active" href="index.html" onclick="event.preventDefault(); switchTab('tab-inicio', this); closeMobileSidebar()">🏠 Inicio</a>
+    <a class="tab-btn" href="control-venta.html" onclick="event.preventDefault(); switchTab('tab-agro', this); closeMobileSidebar()">🌾 Control de Venta Agromercado</a>
+    <a class="tab-btn" href="distribucion-tiendona.html" onclick="event.preventDefault(); switchTab('tab-descargas', this); closeMobileSidebar()">🚚 Distribución Tiendona</a>
+    <a class="tab-btn" href="distribucion-cda.html" onclick="event.preventDefault(); switchTab('tab-distribucion', this); closeMobileSidebar()">🚚 Distribución CDA</a>
+    <a class="tab-btn" href="devoluciones.html" onclick="event.preventDefault(); switchTab('tab-devoluciones', this); closeMobileSidebar()">🔄 Devoluciones</a>
+    <a class="tab-btn" href="inventario.html" onclick="event.preventDefault(); switchTab('tab-inventario', this); closeMobileSidebar()">📦 Control de Inventario</a>
+    <a class="tab-btn" href="reporte-banco.html" onclick="event.preventDefault(); switchTab('tab-bancos', this); closeMobileSidebar()">🏦 Reporte Banco</a>
+    <a class="tab-btn" href="datos.html" onclick="event.preventDefault(); switchTab('tab-datos', this); closeMobileSidebar()">📍 Datos y Ubicación</a>
+    <a class="tab-btn" href="reportes.html" onclick="event.preventDefault(); switchTab('tab-recibos', this); closeMobileSidebar()">📊 Reportes</a>
+    <a class="tab-btn" href="revision.html" onclick="event.preventDefault(); switchTab('tab-revision', this); closeMobileSidebar()">✅ Revisión</a>
   </nav>
 </aside>
 
@@ -936,16 +936,16 @@
 
 <!-- ══ TABS ══ -->
 <nav class="tabs main-tabs" style="gap:4px;">
-  <button class="tab-btn active" onclick="switchTab(&#39;tab-inicio&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🏠 Inicio</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-agro&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🌾 Control de Venta Agromercado</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-descargas&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🚚 Distribución Tiendona</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-distribucion&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🚚 Distribución CDA</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-devoluciones&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🔄 Devoluciones</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-inventario&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">📦 Control de Inventario</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-bancos&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🏦 Reporte Banco</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-datos&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">📍 Datos y Ubicación</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-recibos&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">📊 Reportes</button>
-  <button class="tab-btn" onclick="switchTab(&#39;tab-revision&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">✅ Revisión</button>
+  <a class="tab-btn active" href="index.html" onclick="event.preventDefault(); switchTab(&#39;tab-inicio&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🏠 Inicio</a>
+  <a class="tab-btn" href="control-venta.html" onclick="event.preventDefault(); switchTab(&#39;tab-agro&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🌾 Control de Venta Agromercado</a>
+  <a class="tab-btn" href="distribucion-tiendona.html" onclick="event.preventDefault(); switchTab(&#39;tab-descargas&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🚚 Distribución Tiendona</a>
+  <a class="tab-btn" href="distribucion-cda.html" onclick="event.preventDefault(); switchTab(&#39;tab-distribucion&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🚚 Distribución CDA</a>
+  <a class="tab-btn" href="devoluciones.html" onclick="event.preventDefault(); switchTab(&#39;tab-devoluciones&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🔄 Devoluciones</a>
+  <a class="tab-btn" href="inventario.html" onclick="event.preventDefault(); switchTab(&#39;tab-inventario&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">📦 Control de Inventario</a>
+  <a class="tab-btn" href="reporte-banco.html" onclick="event.preventDefault(); switchTab(&#39;tab-bancos&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">🏦 Reporte Banco</a>
+  <a class="tab-btn" href="datos.html" onclick="event.preventDefault(); switchTab(&#39;tab-datos&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">📍 Datos y Ubicación</a>
+  <a class="tab-btn" href="reportes.html" onclick="event.preventDefault(); switchTab(&#39;tab-recibos&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">📊 Reportes</a>
+  <a class="tab-btn" href="revision.html" onclick="event.preventDefault(); switchTab(&#39;tab-revision&#39;,this)" style="padding:8px 12px;font-size:0.85rem;">✅ Revisión</a>
 </nav>
 
 <!-- ══ MAIN ══ -->
@@ -17280,6 +17280,49 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function(){
       if (typeof window.actualizarDashboardModerno === 'function') window.actualizarDashboardModerno();
     }, 400);
+  });
+})();
+</script>
+<script>
+(function(){
+  var tabAliases = {
+    'control-venta.html': 'tab-agro',
+    'distribucion-tiendona.html': 'tab-descargas',
+    'distribucion-cda.html': 'tab-distribucion',
+    'devoluciones.html': 'tab-devoluciones',
+    'inventario.html': 'tab-inventario',
+    'reporte-banco.html': 'tab-bancos',
+    'datos.html': 'tab-datos',
+    'reportes.html': 'tab-recibos',
+    'revision.html': 'tab-revision'
+  };
+
+  function linkedTabFromLocation(){
+    var stored = '';
+    try { stored = sessionStorage.getItem('excomercafe_open_tab') || ''; } catch(e) {}
+    if (stored && document.getElementById(stored)) return stored;
+
+    var hash = String(location.hash || '').replace(/^#/, '');
+    if (hash && document.getElementById(hash)) return hash;
+
+    var page = String(location.pathname || '').split('/').pop();
+    return tabAliases[page] || '';
+  }
+
+  function openLinkedTab(){
+    var tabId = linkedTabFromLocation();
+    if (!tabId || typeof switchTab !== 'function') return;
+    try { sessionStorage.removeItem('excomercafe_open_tab'); } catch(e) {}
+    var btn = document.querySelector('.main-tabs .tab-btn[onclick*="' + tabId + '"]') ||
+      document.querySelector('.sidebar-nav .tab-btn[onclick*="' + tabId + '"]');
+    switchTab(tabId, btn || null);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(openLinkedTab, 900);
+  });
+  window.addEventListener('hashchange', function(){
+    setTimeout(openLinkedTab, 80);
   });
 })();
 </script>
