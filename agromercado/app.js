@@ -77,7 +77,7 @@ var PRODUCTOS = [
   { key:'precocido', nombre:'Arroz precocido', precio:0.60 },
   { key:'frijol1', nombre:'Frijol 1 lb', precio:0.70 },
   { key:'frijol4', nombre:'Frijol 4 lb', precio:0.70 },
-  { key:'aceite', nombre:'Aceite vegetal 750 ml', precio:1.00 },
+  { key:'aceite', nombre:'Aceite vegetal 750 ml', precio:2.00 },
   { key:'harina', nombre:'Harina de maiz 820 grs', precio:1.10 }
 ];
 
@@ -461,12 +461,14 @@ function reporteCanvas(){
   ctx.fillStyle = '#17456b';
   ctx.fillRect(x, y, contentW, 86);
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 16px Arial';
-  ctx.fillText('EXCOMERCAFE', x + 18, y + 25);
-  ctx.font = 'bold 29px Arial';
-  ctx.fillText('Control de venta en agro-mercado', x + 18, y + 58);
-  ctx.font = 'bold 20px Arial';
-  ctx.fillText(fechaVista(fecha), x + 760, y + 50);
+  ctx.font = 'bold 22px Arial';
+  ctx.fillText('EXCOMERCAFE SA DE CV', x + 18, y + 30);
+  ctx.font = 'bold 31px Arial';
+  ctx.fillText('Control de venta en agro-mercado', x + 18, y + 65);
+  ctx.font = 'bold 25px Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText(fechaVista(fecha), x + contentW - 24, y + 55);
+  ctx.textAlign = 'left';
 
   y += 112;
   function box(label, value, bx, by, bw, bh){
@@ -479,10 +481,9 @@ function reporteCanvas(){
     ctx.font = '15px Arial';
     wrapText(ctx, String(value || ''), bx + 8, by + 40, bw - 16, 18, 2);
   }
-  box('AGROMERCADO', accesoActual ? accesoActual.nombre : '', x, y, 330, 60);
-  box('ENCARGADO', encargado, x + 338, y, 220, 60);
-  box('BANCO', banco || 'Pendiente', x + 566, y, 170, 60);
-  box('GASTOS', money(gastos), x + 744, y, 172, 60);
+  box('AGROMERCADO', accesoActual ? accesoActual.nombre : '', x, y, 430, 60);
+  box('ENCARGADO', encargado, x + 438, y, 250, 60);
+  box('BANCO', banco || 'Pendiente', x + 696, y, 220, 60);
 
   y += 82;
   var cols = [230, 105, 115, 85, 90, 90, 105, 96];
@@ -496,9 +497,11 @@ function reporteCanvas(){
   headers.forEach(function(h, i){
     ctx.strokeRect(cx, y, cols[i], rowH);
     ctx.fillStyle = '#111';
-    ctx.fillText(h, cx + 8, y + 26);
+    ctx.textAlign = i === 0 ? 'left' : 'center';
+    ctx.fillText(h, i === 0 ? cx + 8 : cx + cols[i] / 2, y + 26);
     cx += cols[i];
   });
+  ctx.textAlign = 'left';
   y += rowH;
   PRODUCTOS.forEach(function(prod){
     var row = document.querySelector('tr[data-prod="' + prod.key + '"]');
@@ -508,9 +511,11 @@ function reporteCanvas(){
     values.forEach(function(v, i){
       ctx.strokeRect(cx, y, cols[i], rowH);
       ctx.fillStyle = '#111';
-      ctx.fillText(String(v), cx + 8, y + 26);
+      ctx.textAlign = i === 0 ? 'left' : 'center';
+      ctx.fillText(String(v), i === 0 ? cx + 8 : cx + cols[i] / 2, y + 26);
       cx += cols[i];
     });
+    ctx.textAlign = 'left';
     y += rowH;
   });
 
@@ -580,18 +585,17 @@ function buildPrintHtml(){
     + '@page{size:letter;margin:0.32in;}'
     + '*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10px;}'
     + '.head{display:flex;justify-content:space-between;align-items:flex-start;background:#17456b;color:#fff;padding:10px 12px;margin-bottom:8px;}'
-    + '.head span{display:block;font-size:9px;font-weight:700;letter-spacing:.08em}.head h1{margin:2px 0 0;font-size:17px;line-height:1.05}.date{font-size:12px;font-weight:700;}'
-    + '.meta{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px}.box{border:1px solid #999;padding:5px;min-height:28px}.box b{display:block;font-size:8px;text-transform:uppercase;color:#444;margin-bottom:2px;}'
+    + '.head span{display:block;font-size:14px;font-weight:800;letter-spacing:.08em}.head h1{margin:2px 0 0;font-size:20px;line-height:1.05}.date{font-size:18px;font-weight:800;}'
+    + '.meta{display:grid;grid-template-columns:1.8fr 1fr .9fr;gap:6px;margin-bottom:8px}.box{border:1px solid #999;padding:5px;min-height:28px}.box b{display:block;font-size:8px;text-transform:uppercase;color:#444;margin-bottom:2px;}'
     + 'table{width:100%;border-collapse:collapse;font-size:9px;}th{background:#e8eef5;}th,td{border:1px solid #777;padding:4px;text-align:center;}td:first-child{text-align:left;font-weight:700;}'
     + '.totals{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #777;border-top:0;margin-bottom:8px}.totals div{padding:6px;border-right:1px solid #777}.totals div:last-child{border-right:0}.totals b{display:block;font-size:8px;color:#444}.totals strong{font-size:16px;}'
     + '.obs{border:1px solid #999;min-height:44px;padding:5px;white-space:pre-wrap}.actions{margin-top:8px;text-align:center}@media print{.actions{display:none}}'
     + '</style></head><body>'
-    + '<div class="head"><div><span>EXCOMERCAFE</span><h1>Control de venta en agro-mercado</h1></div><div class="date">' + htmlEscape(fechaVista(fecha)) + '</div></div>'
+    + '<div class="head"><div><span>EXCOMERCAFE SA DE CV</span><h1>Control de venta en agro-mercado</h1></div><div class="date">' + htmlEscape(fechaVista(fecha)) + '</div></div>'
     + '<div class="meta">'
     + '<div class="box"><b>Agromercado</b>' + htmlEscape(accesoActual ? accesoActual.nombre : '') + '</div>'
     + '<div class="box"><b>Encargado</b>' + htmlEscape(encargado) + '</div>'
     + '<div class="box"><b>Banco</b>' + htmlEscape(banco || 'Pendiente') + '</div>'
-    + '<div class="box"><b>Gastos</b>' + money(gastos) + '</div>'
     + '</div>'
     + '<table><thead><tr><th>Producto</th><th>Inv. ant.</th><th>Merc. nueva</th><th>Venta</th><th>Faltante</th><th>Danado</th><th>Inv. final</th><th>Total dinero</th></tr></thead><tbody>' + rows + '</tbody></table>'
     + '<div class="totals"><div><b>Ventas</b><strong>' + htmlEscape(document.getElementById('total-ventas').textContent) + '</strong></div><div><b>Gastos</b><strong>' + htmlEscape(document.getElementById('total-gastos').textContent) + '</strong></div><div><b>Remesa</b><strong>' + htmlEscape(document.getElementById('total-remesa').textContent) + '</strong></div></div>'
