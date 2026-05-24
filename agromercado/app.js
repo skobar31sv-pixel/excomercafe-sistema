@@ -245,20 +245,25 @@ function limpiarAccesoPortal(){
   try{ localStorage.removeItem(ACCESS_STORAGE_KEY); }catch(e){}
 }
 
-function guardarPendienteLocal(agromercado){
+function fechaSeleccionada(){
+  var fecha = document.getElementById('fecha');
+  return (fecha && fecha.value) || hoy();
+}
+
+function guardarPendienteLocal(agromercado, fecha){
   try{
     localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify({
       agromercado: agromercado || '',
-      fecha: hoy(),
+      fecha: fecha || fechaSeleccionada(),
       guardado_en: new Date().toISOString()
     }));
   }catch(e){}
 }
 
-function leerPendienteLocal(agromercado){
+function leerPendienteLocal(agromercado, fecha){
   try{
     var data = JSON.parse(localStorage.getItem(PENDING_STORAGE_KEY) || 'null');
-    return data && data.agromercado === agromercado ? data : null;
+    return data && data.agromercado === agromercado && String(data.fecha || '').slice(0,10) === String(fecha || fechaSeleccionada()).slice(0,10) ? data : null;
   }catch(e){
     return null;
   }
@@ -273,17 +278,20 @@ function setHojaBloqueada(locked, info){
   var form = document.getElementById('sales-form');
   if(form) form.classList.toggle('is-locked', hojaBloqueada);
   document.querySelectorAll('#sales-form input, #sales-form select, #sales-form textarea').forEach(function(el){
-    el.disabled = hojaBloqueada;
+    el.disabled = hojaBloqueada && el.id !== 'fecha';
   });
   document.querySelectorAll('#sales-form button.primary').forEach(function(btn){
     btn.disabled = hojaBloqueada;
   });
   if(hojaBloqueada){
     var fecha = info && info.fecha ? (' del ' + fechaVista(info.fecha)) : '';
-    setMessage('submit-message', 'Reporte enviado y pendiente de revision' + fecha + '. No se puede editar ni enviar otro hasta que sea aprobado o rechazado.', 'ok');
+    var aprobado = info && (info.tipo === 'aprobado' || String(info.estado || '').toLowerCase() === 'aprobado');
+    setMessage('submit-message', aprobado
+      ? 'Reporte aprobado' + fecha + '. Ya no se puede enviar otro reporte para esa fecha.'
+      : 'Reporte enviado y pendiente de revision' + fecha + '. No se puede editar ni enviar otro para esa fecha hasta que sea aprobado o rechazado.', 'ok');
   }else{
     var msg = document.getElementById('submit-message');
-    if(msg && /Reporte enviado y pendiente/i.test(msg.textContent || '')) setMessage('submit-message', '', '');
+    if(msg && /Reporte (enviado y pendiente|aprobado)/i.test(msg.textContent || '')) setMessage('submit-message', '', '');
   }
 }
 
@@ -605,28 +613,18 @@ function buildPrintHtml(){
     + '</body></html>';
 }
 
-async function revisarBloqueoPendiente(agromercado){
-  var local = leerPendienteLocal(agromercado);
+async function revisarBloqueoPendiente(agromercado, fecha){
+  fecha = fecha || fechaSeleccionada();
+  var local = leerPendienteLocal(agromercado, fecha);
   try{
-    var response = await fetch(SUPABASE_CONFIG.url + '/rest/v1/rpc/portal_agromercado_pendiente', {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_CONFIG.key,
-        Authorization: 'Bearer ' + SUPABASE_CONFIG.key,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ p_agromercado: agromercado })
-    });
-    if(response.ok){
-      var rows = await response.json();
-      var info = rows && rows[0] ? rows[0] : null;
-      if(info && info.pendiente){
-        guardarPendienteLocal(agromercado);
-        setHojaBloqueada(true, info);
-      }else{
-        limpiarPendienteLocal();
-        setHojaBloqueada(false);
-      }
+    var existente = await buscarReportePorFecha(agromercado, fecha);
+    if(existente){
+      guardarPendienteLocal(agromercado, fecha);
+      setHojaBloqueada(true, existente);
+      return;
+    }else{
+      if(local) limpiarPendienteLocal();
+      setHojaBloqueada(false);
       return;
     }
   }catch(e){}
@@ -656,6 +654,17 @@ async function fetchSupabase(path){
   });
   if(!response.ok) return null;
   return response.json();
+}
+
+async function buscarReportePorFecha(agromercado, fecha){
+  fecha = String(fecha || fechaSeleccionada()).slice(0,10);
+  var queryAgro = encodeURIComponent(agromercado);
+  var queryFecha = encodeURIComponent(fecha);
+  var pending = await fetchSupabase('/rest/v1/ventas_agromercado_pendientes?select=fecha,agromercado,estado,creado_en&agromercado=eq.' + queryAgro + '&fecha=eq.' + queryFecha + '&estado=eq.pendiente&limit=1');
+  if(pending && pending.length) return Object.assign({ tipo:'pendiente' }, pending[0]);
+  var approved = await fetchSupabase('/rest/v1/ventas_agromercado?select=fecha,agromercado,creado_en&agromercado=eq.' + queryAgro + '&fecha=eq.' + queryFecha + '&limit=1');
+  if(approved && approved.length) return Object.assign({ tipo:'aprobado' }, approved[0]);
+  return null;
 }
 
 function payloadHistorial(row){
@@ -807,7 +816,7 @@ async function cargarValoresInicialesRpc(agromercado, fecha){
 }
 
 async function cargarValoresInicialesAgromercado(agromercado){
-  var fecha = hoy();
+  var fecha = fechaSeleccionada();
   var anteriores = {};
   var nuevos = {};
 
@@ -842,10 +851,10 @@ async function refrescarHojaVendedor(silent){
   if(!accesoActual || refreshRunning) return;
   refreshRunning = true;
   try{
-    var fechaHoy = hoy();
+    var fechaHoy = fechaSeleccionada();
     var fechaInput = document.getElementById('fecha');
     var fechaVisible = document.getElementById('fecha-visible');
-    if(fechaInput && fechaInput.value !== fechaHoy) fechaInput.value = fechaHoy;
+    if(fechaInput && !fechaInput.value) fechaInput.value = fechaHoy;
     if(fechaVisible) fechaVisible.textContent = fechaVista(fechaHoy);
 
     if(!silent) setMessage('access-message', '', '');
@@ -853,7 +862,7 @@ async function refrescarHojaVendedor(silent){
     await cargarValoresInicialesAgromercado(accesoActual.nombre);
     calcularTotales();
     await cargarHistorialVentas(accesoActual.nombre);
-    await revisarBloqueoPendiente(accesoActual.nombre);
+    await revisarBloqueoPendiente(accesoActual.nombre, fechaHoy);
   }catch(error){
     if(!silent) setMessage('submit-message', 'No se pudo refrescar automaticamente. Reintentando...', 'error');
   }finally{
@@ -929,12 +938,24 @@ async function enviarControl(event){
   event.preventDefault();
   if(!accesoActual) return;
   if(hojaBloqueada){
-    setMessage('submit-message', 'Ya existe un reporte pendiente de revision para este agromercado.', 'error');
+    setMessage('submit-message', 'Ya existe un reporte para esta fecha de este agromercado.', 'error');
     return;
   }
   setMessage('submit-message', 'Enviando...', '');
   calcularTotales();
   if(!validarInventarioDisponible()) return;
+  var fechaReporte = document.getElementById('fecha').value;
+  try{
+    var existente = await buscarReportePorFecha(accesoActual.nombre, fechaReporte);
+    if(existente){
+      setHojaBloqueada(true, existente);
+      setMessage('submit-message', 'Ya existe un reporte para el ' + fechaVista(fechaReporte) + '. Selecciona otra fecha si necesitas enviar otro dia.', 'error');
+      return;
+    }
+  }catch(errorValidacion){
+    setMessage('submit-message', 'No se pudo verificar si ya existe reporte para esta fecha. Intenta actualizar.', 'error');
+    return;
+  }
   var productos = leerProductos();
   var ventas = PRODUCTOS.reduce(function(acc, prod){
     return acc + n(productos.dinero_productos[prod.key]);
@@ -942,7 +963,7 @@ async function enviarControl(event){
   var gastos = n(document.getElementById('gastos').value);
   var payload = Object.assign({
     id: localId(),
-    fecha: document.getElementById('fecha').value,
+    fecha: fechaReporte,
     agromercado: accesoActual.nombre,
     nombre: accesoActual.nombre,
     encargado: document.getElementById('encargado').value.trim(),
@@ -969,7 +990,7 @@ async function enviarControl(event){
 
   try{
     await supabaseInsert(row);
-    guardarPendienteLocal(accesoActual.nombre);
+    guardarPendienteLocal(accesoActual.nombre, payload.fecha);
     setHojaBloqueada(true, { fecha: payload.fecha });
     calcularTotales();
     await cargarHistorialVentas(accesoActual.nombre);
@@ -985,5 +1006,11 @@ document.addEventListener('DOMContentLoaded', function(){
   renderProductos();
   var fecha = document.getElementById('fecha');
   if(fecha) fecha.value = hoy();
+  if(fecha){
+    fecha.addEventListener('change', function(){
+      if(document.getElementById('fecha-visible')) document.getElementById('fecha-visible').textContent = fechaVista(fecha.value || hoy());
+      refrescarHojaVendedor(false);
+    });
+  }
   restaurarAccesoGuardado();
 });
