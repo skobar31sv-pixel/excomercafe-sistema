@@ -5486,13 +5486,11 @@ window.eliminarRegistro = function(index){
   localStorage.setItem('exc_agro_hist', JSON.stringify(hist));
   var localIdValue = registroEliminado.local_id || registroEliminado.id || registroEliminado.ts || registroEliminado.timestamp;
   if (localIdValue) {
-    eliminarSupabasePorLocalId('ventas_agromercado', localIdValue).then(function(){
-      if(typeof window.sincronizarPendientesSupabase === 'function') {
-        window.sincronizarPendientesSupabase({ noInterrupt:true, silent:true }).catch(function(error){
-          console.warn('Sincronizacion tras borrar pendiente:', error);
-        });
-      }
-    });
+    setTimeout(function(){
+      eliminarSupabasePorLocalId('ventas_agromercado', localIdValue).catch(function(error){
+        console.warn('No se pudo borrar en Supabase:', error);
+      });
+    }, 0);
   } else {
     if (typeof showToast === 'function') {
       showToast('⚠️ Registro eliminado localmente. No se encontró ID para borrar en Supabase.');
@@ -14150,6 +14148,14 @@ document.addEventListener('DOMContentLoaded', function() {
     aceite: 'Aceite',
     harina: 'Harina'
   };
+  var PRODUCT_FACTORS_DIST = {
+    arroz: 80,
+    precocido: 80,
+    frijol1: 80,
+    frijol4: 80,
+    aceite: 20,
+    harina: 25
+  };
 
   var SOURCE_LOCATIONS_DIST = {
     TIENDONA: ['descargas-tiendona', 'descargas-tiendona-abajo', 'descargas-tiendona-arriba'],
@@ -14170,6 +14176,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     return target;
   }
+
+  function expandirDistribucionPaquetes(row){
+    var expanded = Object.assign({}, row);
+    PRODUCT_KEYS_DIST.forEach(function(key){
+      expanded[key] = normalizeNumber(row[key]) * (PRODUCT_FACTORS_DIST[key] || 1);
+    });
+    return expanded;
+  }
+
+  function totalUnidadesDistribucion(row){
+    return PRODUCT_KEYS_DIST.reduce(function(total, key){
+      return total + normalizeNumber(row[key]);
+    }, 0);
+  }
+
+  window.expandirDistribucionPaquetes = expandirDistribucionPaquetes;
+  window.totalUnidadesDistribucion = totalUnidadesDistribucion;
 
   function getInventoryTotals(locations){
     var totals = emptyTotals();
@@ -14215,7 +14238,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function getMatrixTotals(tipo){
     return readMatrixRows(tipo).reduce(function(acc, row){
-      return addTotals(acc, row, 1);
+      return addTotals(acc, expandirDistribucionPaquetes(row), 1);
     }, emptyTotals());
   }
 
@@ -14336,6 +14359,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var timestamp = Date.now();
     rows.forEach(function(row, index){
       var id = 'tiendona-' + timestamp + '-' + index;
+      var unidades = expandirDistribucionPaquetes(row);
       data.unshift({
         id: id,
         fecha: fecha,
@@ -14349,11 +14373,19 @@ document.addEventListener('DOMContentLoaded', function() {
         frijol4: row.frijol4,
         aceite: row.aceite,
         harina: row.harina,
+        unidades: {
+          arroz: unidades.arroz,
+          precocido: unidades.precocido,
+          frijol1: unidades.frijol1,
+          frijol4: unidades.frijol4,
+          aceite: unidades.aceite,
+          harina: unidades.harina
+        },
         observaciones: observaciones,
         timestamp: new Date().toISOString()
       });
-      saveSourceSalida(row, 'TIENDONA', id, fecha);
-      saveEntradaAgromercado(row, id, fecha, 'Tiendona');
+      saveSourceSalida(unidades, 'TIENDONA', id, fecha);
+      saveEntradaAgromercado(unidades, id, fecha, 'Tiendona');
     });
 
     localStorage.setItem('descargas-data', JSON.stringify(data));
@@ -14383,6 +14415,7 @@ document.addEventListener('DOMContentLoaded', function() {
     rows.forEach(function(row, index){
       var id = 'dist-' + timestamp + '-' + index;
       var total = row.arroz + row.precocido + row.frijol1 + row.frijol4 + row.aceite + row.harina;
+      var unidades = expandirDistribucionPaquetes(row);
       data.push({
         id: id,
         fecha: fecha,
@@ -14397,11 +14430,20 @@ document.addEventListener('DOMContentLoaded', function() {
         aceite: row.aceite,
         harina: row.harina,
         total: total,
+        total_unidades: totalUnidadesDistribucion(unidades),
+        unidades: {
+          arroz: unidades.arroz,
+          precocido: unidades.precocido,
+          frijol1: unidades.frijol1,
+          frijol4: unidades.frijol4,
+          aceite: unidades.aceite,
+          harina: unidades.harina
+        },
         observaciones: observaciones,
         timestamp: new Date().toISOString()
       });
-      saveSourceSalida(row, 'CDA', id, fecha);
-      saveEntradaAgromercado(row, id, fecha, 'CDA');
+      saveSourceSalida(unidades, 'CDA', id, fecha);
+      saveEntradaAgromercado(unidades, id, fecha, 'CDA');
     });
 
     distribucionData = data;
@@ -16526,6 +16568,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var timestamp = Date.now();
     rows.forEach(function(row, index){
       var id = 'tiendona-' + timestamp + '-' + index;
+      var unidades = typeof window.expandirDistribucionPaquetes === 'function'
+        ? window.expandirDistribucionPaquetes(row)
+        : row;
       data.unshift({
         id: id,
         fecha: fecha,
@@ -16539,6 +16584,14 @@ document.addEventListener('DOMContentLoaded', function() {
         frijol4: row.frijol4,
         aceite: row.aceite,
         harina: row.harina,
+        unidades: {
+          arroz: Number(unidades.arroz || 0) || 0,
+          precocido: Number(unidades.precocido || 0) || 0,
+          frijol1: Number(unidades.frijol1 || 0) || 0,
+          frijol4: Number(unidades.frijol4 || 0) || 0,
+          aceite: Number(unidades.aceite || 0) || 0,
+          harina: Number(unidades.harina || 0) || 0
+        },
         observaciones: observaciones,
         timestamp: new Date().toISOString()
       });
@@ -16556,12 +16609,12 @@ document.addEventListener('DOMContentLoaded', function() {
           lugar: 'Tiendona',
           tipo: 'salida-distribucion',
           referencia: 'Salida Tiendona a ' + row.destino,
-          arroz: -row.arroz,
-          precocido: -row.precocido,
-          frijol1: -row.frijol1,
-          frijol4: -row.frijol4,
-          aceite: -row.aceite,
-          harina: -row.harina
+          arroz: -unidades.arroz,
+          precocido: -unidades.precocido,
+          frijol1: -unidades.frijol1,
+          frijol4: -unidades.frijol4,
+          aceite: -unidades.aceite,
+          harina: -unidades.harina
         });
         registrarMovimientoInventario({
           id: 'entrada-' + id,
@@ -16570,12 +16623,12 @@ document.addEventListener('DOMContentLoaded', function() {
           lugar: row.destino,
           tipo: 'entrada-distribucion',
           referencia: 'Distribucion Tiendona - ' + [row.distrito, row.municipio].filter(Boolean).join(', '),
-          arroz: row.arroz,
-          precocido: row.precocido,
-          frijol1: row.frijol1,
-          frijol4: row.frijol4,
-          aceite: row.aceite,
-          harina: row.harina
+          arroz: unidades.arroz,
+          precocido: unidades.precocido,
+          frijol1: unidades.frijol1,
+          frijol4: unidades.frijol4,
+          aceite: unidades.aceite,
+          harina: unidades.harina
         });
       }
     });
@@ -16609,6 +16662,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var opciones = obtenerUbicacionesInventarioParaDestino(row.agromercado, 'TIENDONA');
         if (opciones && opciones[0] && opciones[0].value) source = opciones[0].value;
       }
+      var cantidades = row.unidades || (typeof window.expandirDistribucionPaquetes === 'function'
+        ? window.expandirDistribucionPaquetes(row)
+        : row);
       var result = registrarMovimientoInventario({
         id: salidaId,
         fecha: row.fecha || (typeof fechaHoy === 'function' ? fechaHoy() : fechaISOActualSistema()),
@@ -16616,12 +16672,12 @@ document.addEventListener('DOMContentLoaded', function() {
         lugar: 'Tiendona',
         tipo: 'salida-distribucion',
         referencia: 'Reparacion salida Tiendona a ' + (row.agromercado || ''),
-        arroz: -(Number(row.arroz || 0) || 0),
-        precocido: -(Number(row.precocido || 0) || 0),
-        frijol1: -(Number(row.frijol1 || 0) || 0),
-        frijol4: -(Number(row.frijol4 || 0) || 0),
-        aceite: -(Number(row.aceite || 0) || 0),
-        harina: -(Number(row.harina || 0) || 0)
+        arroz: -(Number(cantidades.arroz || 0) || 0),
+        precocido: -(Number(cantidades.precocido || 0) || 0),
+        frijol1: -(Number(cantidades.frijol1 || 0) || 0),
+        frijol4: -(Number(cantidades.frijol4 || 0) || 0),
+        aceite: -(Number(cantidades.aceite || 0) || 0),
+        harina: -(Number(cantidades.harina || 0) || 0)
       });
       if (result && result.success) {
         existentes[salidaId] = true;
