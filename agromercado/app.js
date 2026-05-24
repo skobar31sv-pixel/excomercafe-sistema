@@ -469,10 +469,10 @@ function reporteCanvas(){
   ctx.fillStyle = '#17456b';
   ctx.fillRect(x, y, contentW, 86);
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 22px Arial';
-  ctx.fillText('EXCOMERCAFE SA DE CV', x + 18, y + 30);
   ctx.font = 'bold 31px Arial';
-  ctx.fillText('Control de venta en agro-mercado', x + 18, y + 65);
+  ctx.fillText('EXCOMERCAFE SA DE CV', x + 18, y + 30);
+  ctx.font = 'bold 21px Arial';
+  ctx.fillText('Control de venta en agro-mercado', x + 18, y + 62);
   ctx.font = 'bold 25px Arial';
   ctx.textAlign = 'right';
   ctx.fillText(fechaVista(fecha), x + contentW - 24, y + 55);
@@ -593,7 +593,7 @@ function buildPrintHtml(){
     + '@page{size:letter;margin:0.32in;}'
     + '*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10px;}'
     + '.head{display:flex;justify-content:space-between;align-items:flex-start;background:#17456b;color:#fff;padding:10px 12px;margin-bottom:8px;}'
-    + '.head span{display:block;font-size:14px;font-weight:800;letter-spacing:.08em}.head h1{margin:2px 0 0;font-size:20px;line-height:1.05}.date{font-size:18px;font-weight:800;}'
+    + '.head span{display:block;font-size:20px;font-weight:900;letter-spacing:.08em;line-height:1}.head h1{margin:3px 0 0;font-size:14px;line-height:1.05}.date{font-size:18px;font-weight:800;}'
     + '.meta{display:grid;grid-template-columns:1.8fr 1fr .9fr;gap:6px;margin-bottom:8px}.box{border:1px solid #999;padding:5px;min-height:28px}.box b{display:block;font-size:8px;text-transform:uppercase;color:#444;margin-bottom:2px;}'
     + 'table{width:100%;border-collapse:collapse;font-size:9px;}th{background:#e8eef5;}th,td{border:1px solid #777;padding:4px;text-align:center;}td:first-child{text-align:left;font-weight:700;}'
     + '.totals{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #777;border-top:0;margin-bottom:8px}.totals div{padding:6px;border-right:1px solid #777}.totals div:last-child{border-right:0}.totals b{display:block;font-size:8px;color:#444}.totals strong{font-size:16px;}'

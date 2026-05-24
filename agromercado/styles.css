@@ -38,20 +38,23 @@ body{
 
 .portal-head span{
   display:block;
-  font-size:.78rem;
+  font-size:1.25rem;
   letter-spacing:.12em;
-  font-weight:800;
+  font-weight:900;
+  line-height:1.05;
 }
 
 .portal-head h1{
-  margin:4px 0 0;
-  font-size:1.35rem;
+  margin:5px 0 0;
+  font-size:1rem;
+  font-weight:800;
 }
 
 .portal-date{
   padding:10px 14px;
   border-radius:6px;
   background:rgba(255,255,255,.12);
+  font-size:1.12rem;
   font-weight:800;
   white-space:nowrap;
 }
