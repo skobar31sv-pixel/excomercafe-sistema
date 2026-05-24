@@ -923,7 +923,6 @@
       <div class="auth-actions">
         <button type="submit">Entrar</button>
       </div>
-      <button type="button" class="auth-toggle" onclick="mostrarSolicitudPassword()">Olvide mi contraseña</button>
       <button type="button" class="auth-toggle" onclick="mostrarCrearUsuario()">Crear nuevo usuario</button>
     </div>
   </form>
@@ -952,52 +951,6 @@
         <button type="submit">Crear usuario</button>
       </div>
       <button type="button" class="auth-toggle" onclick="mostrarLoginUsuario()">Volver a iniciar sesión</button>
-    </div>
-  </form>
-
-  <form class="auth-card auth-hidden" id="auth-reset-request-card" onsubmit="solicitarCambioPassword(event)">
-    <div class="auth-head">
-      <span>Recuperar acceso</span>
-      <strong>Solicitar cambio</strong>
-    </div>
-    <div class="auth-body">
-      <div class="fg">
-        <label>Usuario</label>
-        <input type="text" id="reset-usuario" autocomplete="username" placeholder="Ej. operador1" required>
-      </div>
-      <div class="auth-note">La solicitud queda pendiente hasta que un administrador la apruebe. Luego podras escribir tu nueva contraseña aqui mismo.</div>
-      <div class="auth-error" id="reset-request-error"></div>
-      <div class="auth-actions">
-        <button type="submit">Solicitar</button>
-      </div>
-      <button type="button" class="auth-toggle" onclick="revisarMiSolicitudPassword()">Revisar si ya fue aprobada</button>
-      <button type="button" class="auth-toggle" onclick="mostrarLoginUsuario()">Volver a iniciar sesión</button>
-    </div>
-  </form>
-
-  <form class="auth-card auth-hidden" id="auth-reset-complete-card" onsubmit="completarCambioPassword(event)">
-    <div class="auth-head">
-      <span>Solicitud aprobada</span>
-      <strong>Nueva contraseña</strong>
-    </div>
-    <div class="auth-body">
-      <div class="fg">
-        <label>Usuario</label>
-        <input type="text" id="reset-complete-usuario" readonly>
-      </div>
-      <div class="fg">
-        <label>Nueva contraseña</label>
-        <input type="password" id="reset-new-password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required>
-      </div>
-      <div class="fg">
-        <label>Confirmar contraseña</label>
-        <input type="password" id="reset-new-password-2" autocomplete="new-password" placeholder="Repetir contraseña" required>
-      </div>
-      <div class="auth-error" id="reset-complete-error"></div>
-      <div class="auth-actions">
-        <button type="submit">Cambiar contraseña</button>
-      </div>
-      <button type="button" class="auth-toggle" onclick="mostrarLoginUsuario()">Cancelar</button>
     </div>
   </form>
 </div>
@@ -2709,14 +2662,6 @@
         <div class="sp-sub" style="margin-top:8px;">El nombre visible del chat se cambia desde el panel de chat.</div>
       </div>
 
-      <div class="sp-section" id="password-reset-admin-section">
-        <div class="sp-label">Solicitudes de contraseña</div>
-        <div class="sp-btn-row">
-          <button class="sp-btn" onclick="cargarSolicitudesPassword()">Revisar solicitudes</button>
-        </div>
-        <div id="password-reset-admin-list" class="sp-sub" style="margin-top:8px;">Sin revisar.</div>
-      </div>
-
       <div class="sp-section">
         <div class="sp-label">Respaldo de Datos</div>
         <div class="sp-btn-row">
@@ -2991,52 +2936,6 @@ function authUserId(){
   if(payload && payload.sub) return payload.sub;
   return window.authSession && window.authSession.user ? window.authSession.user.id : '';
 }
-
-function passwordResetStorageKey(){ return 'excomercafe_password_reset_request'; }
-
-function leerSolicitudPasswordLocal(){
-  try { return JSON.parse(localStorage.getItem(passwordResetStorageKey()) || 'null'); }
-  catch(e){ return null; }
-}
-
-function guardarSolicitudPasswordLocal(data){
-  try { localStorage.setItem(passwordResetStorageKey(), JSON.stringify(data || {})); } catch(e){}
-}
-
-function limpiarSolicitudPasswordLocal(){
-  try { localStorage.removeItem(passwordResetStorageKey()); } catch(e){}
-}
-
-async function sha256Hex(text){
-  var data = new TextEncoder().encode(String(text || ''));
-  var hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
-}
-
-function uuidSeguro(){
-  if(crypto && crypto.randomUUID) return crypto.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
-    var r = Math.random() * 16 | 0;
-    var v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
-async function rpcAnon(path, body){
-  var response = await fetch(window.SUPABASE_CONFIG.url + '/rest/v1/rpc/' + path, {
-    method:'POST',
-    headers:{
-      apikey: window.SUPABASE_CONFIG.key,
-      Authorization: 'Bearer ' + window.SUPABASE_CONFIG.key,
-      'Content-Type':'application/json'
-    },
-    body: JSON.stringify(body || {})
-  });
-  var data = await response.json().catch(function(){ return null; });
-  if(!response.ok) throw new Error((data && data.message) || 'No se pudo completar la operación.');
-  return data;
-}
-
 window.haySesionSupabase = function(){
   if(authToken()) return true;
   var session = leerSesionAuth();
@@ -3046,11 +2945,7 @@ window.haySesionSupabase = function(){
 window.mostrarCrearUsuario = function(){
   var login = document.getElementById('auth-login-card');
   var register = document.getElementById('auth-register-card');
-  var resetRequest = document.getElementById('auth-reset-request-card');
-  var resetComplete = document.getElementById('auth-reset-complete-card');
   if(login) login.classList.add('auth-hidden');
-  if(resetRequest) resetRequest.classList.add('auth-hidden');
-  if(resetComplete) resetComplete.classList.add('auth-hidden');
   if(register) register.classList.remove('auth-hidden');
   var errorEl = document.getElementById('register-error');
   if(errorEl) errorEl.textContent = '';
@@ -3059,45 +2954,11 @@ window.mostrarCrearUsuario = function(){
 window.mostrarLoginUsuario = function(){
   var login = document.getElementById('auth-login-card');
   var register = document.getElementById('auth-register-card');
-  var resetRequest = document.getElementById('auth-reset-request-card');
-  var resetComplete = document.getElementById('auth-reset-complete-card');
   if(register) register.classList.add('auth-hidden');
-  if(resetRequest) resetRequest.classList.add('auth-hidden');
-  if(resetComplete) resetComplete.classList.add('auth-hidden');
   if(login) login.classList.remove('auth-hidden');
   var errorEl = document.getElementById('auth-error');
   if(errorEl) errorEl.textContent = '';
 };
-
-window.mostrarSolicitudPassword = function(){
-  var login = document.getElementById('auth-login-card');
-  var register = document.getElementById('auth-register-card');
-  var resetRequest = document.getElementById('auth-reset-request-card');
-  var resetComplete = document.getElementById('auth-reset-complete-card');
-  if(login) login.classList.add('auth-hidden');
-  if(register) register.classList.add('auth-hidden');
-  if(resetComplete) resetComplete.classList.add('auth-hidden');
-  if(resetRequest) resetRequest.classList.remove('auth-hidden');
-  var saved = leerSolicitudPasswordLocal();
-  var usuario = document.getElementById('reset-usuario');
-  if(saved && usuario) usuario.value = saved.usuario || '';
-  var errorEl = document.getElementById('reset-request-error');
-  if(errorEl) errorEl.textContent = saved ? 'Solicitud guardada. Revisa si ya fue aprobada.' : '';
-};
-
-function mostrarCompletarPassword(usuario){
-  var login = document.getElementById('auth-login-card');
-  var register = document.getElementById('auth-register-card');
-  var resetRequest = document.getElementById('auth-reset-request-card');
-  var resetComplete = document.getElementById('auth-reset-complete-card');
-  if(login) login.classList.add('auth-hidden');
-  if(register) register.classList.add('auth-hidden');
-  if(resetRequest) resetRequest.classList.add('auth-hidden');
-  if(resetComplete) resetComplete.classList.remove('auth-hidden');
-  var userEl = document.getElementById('reset-complete-usuario');
-  if(userEl) userEl.value = usuario || '';
-}
-
 function aplicarSesionAuth(session){
   guardarSesionAuth(session);
   document.body.classList.toggle('auth-locked', !session);
@@ -3209,125 +3070,6 @@ window.loginUsuarioSistema = async function(event){
   }
   return false;
 };
-
-window.solicitarCambioPassword = async function(event){
-  if(event && event.preventDefault) event.preventDefault();
-  var errorEl = document.getElementById('reset-request-error');
-  var usuario = (document.getElementById('reset-usuario')?.value || '').trim();
-  if(!usuario){
-    if(errorEl) errorEl.textContent = 'Escribe tu usuario.';
-    return false;
-  }
-  if(!crypto || !crypto.subtle){
-    if(errorEl) errorEl.textContent = 'Este navegador no permite crear la solicitud segura. Abre la pagina con https.';
-    return false;
-  }
-  try{
-    if(errorEl) errorEl.textContent = 'Creando solicitud...';
-    var emailSolicitud = usuarioToEmail(usuario);
-    var existentes = await fetch(window.SUPABASE_CONFIG.url + '/rest/v1/password_reset_requests?select=id,estado,creado_en&email=eq.' + encodeURIComponent(emailSolicitud) + '&estado=in.(pendiente,aprobada)&order=creado_en.desc&limit=1', {
-      headers:{
-        apikey: window.SUPABASE_CONFIG.key,
-        Authorization:'Bearer ' + window.SUPABASE_CONFIG.key
-      }
-    }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-    if(existentes && existentes.length){
-      if(errorEl) errorEl.textContent = 'Ya existe una solicitud ' + existentes[0].estado + ' para este usuario. Revisa si ya fue aprobada.';
-      return false;
-    }
-    var id = uuidSeguro();
-    var token = uuidSeguro() + '-' + Date.now();
-    var tokenHash = await sha256Hex(token);
-    var row = {
-      id: id,
-      usuario: normalizarUsuarioRol(usuario),
-      email: emailSolicitud,
-      token_hash: tokenHash,
-      estado: 'pendiente'
-    };
-    var response = await fetch(window.SUPABASE_CONFIG.url + '/rest/v1/password_reset_requests', {
-      method:'POST',
-      headers:{
-        apikey: window.SUPABASE_CONFIG.key,
-        Authorization:'Bearer ' + window.SUPABASE_CONFIG.key,
-        'Content-Type':'application/json',
-        Prefer:'return=minimal'
-      },
-      body: JSON.stringify([row])
-    });
-    if(!response.ok){
-      var data = await response.json().catch(function(){ return null; });
-      throw new Error((data && data.message) || 'No se pudo crear la solicitud. Revisa el SQL de Supabase.');
-    }
-    guardarSolicitudPasswordLocal({ id:id, token:token, usuario:usuario, creado_en:new Date().toISOString() });
-    if(errorEl) errorEl.textContent = 'Solicitud enviada. Espera aprobacion del administrador.';
-  }catch(error){
-    if(errorEl) errorEl.textContent = error.message || 'No se pudo crear la solicitud.';
-  }
-  return false;
-};
-
-window.revisarMiSolicitudPassword = async function(){
-  var errorEl = document.getElementById('reset-request-error');
-  var saved = leerSolicitudPasswordLocal();
-  if(!saved || !saved.id || !saved.token){
-    if(errorEl) errorEl.textContent = 'Primero crea una solicitud desde esta misma PC.';
-    return;
-  }
-  try{
-    if(errorEl) errorEl.textContent = 'Revisando solicitud...';
-    var status = await rpcAnon('password_reset_status', { p_request_id:saved.id, p_token:saved.token });
-    var estado = Array.isArray(status) && status[0] ? status[0].estado : (status && status.estado);
-    if(estado === 'aprobada'){
-      mostrarCompletarPassword(saved.usuario);
-      return;
-    }
-    if(estado === 'usada'){
-      limpiarSolicitudPasswordLocal();
-      if(errorEl) errorEl.textContent = 'Esta solicitud ya fue usada. Inicia sesion con tu nueva contraseña.';
-      return;
-    }
-    if(errorEl) errorEl.textContent = 'Estado: ' + (estado || 'pendiente') + '. Aun no ha sido aprobada.';
-  }catch(error){
-    if(errorEl) errorEl.textContent = error.message || 'No se pudo revisar la solicitud.';
-  }
-};
-
-window.completarCambioPassword = async function(event){
-  if(event && event.preventDefault) event.preventDefault();
-  var errorEl = document.getElementById('reset-complete-error');
-  var saved = leerSolicitudPasswordLocal();
-  var pass1 = document.getElementById('reset-new-password')?.value || '';
-  var pass2 = document.getElementById('reset-new-password-2')?.value || '';
-  if(!saved || !saved.id || !saved.token){
-    if(errorEl) errorEl.textContent = 'No se encontro la solicitud en esta PC.';
-    return false;
-  }
-  if(pass1.length < 6 || pass1 !== pass2){
-    if(errorEl) errorEl.textContent = 'La contraseña debe tener minimo 6 caracteres y coincidir.';
-    return false;
-  }
-  try{
-    if(errorEl) errorEl.textContent = 'Cambiando contraseña...';
-    await rpcAnon('complete_password_reset', {
-      p_request_id: saved.id,
-      p_token: saved.token,
-      p_new_password: pass1
-    });
-    limpiarSolicitudPasswordLocal();
-    var loginUsuario = document.getElementById('login-usuario');
-    if(loginUsuario) loginUsuario.value = saved.usuario || '';
-    document.getElementById('reset-new-password').value = '';
-    document.getElementById('reset-new-password-2').value = '';
-    mostrarLoginUsuario();
-    var authError = document.getElementById('auth-error');
-    if(authError) authError.textContent = 'Contraseña cambiada. Inicia sesion.';
-  }catch(error){
-    if(errorEl) errorEl.textContent = error.message || 'No se pudo cambiar la contraseña.';
-  }
-  return false;
-};
-
 window.crearUsuarioSistema = async function(event){
   if(event && event.preventDefault) event.preventDefault();
   var errorEl = document.getElementById('register-error');
@@ -3387,59 +3129,6 @@ window.logoutUsuarioSistema = function(){
   var pass = document.getElementById('login-password');
   if(pass) pass.value = '';
 };
-
-window.cargarSolicitudesPassword = async function(){
-  var cont = document.getElementById('password-reset-admin-list');
-  if(!cont) return;
-  if(!window.esAdminSistema || !window.esAdminSistema(window.authSession)){
-    cont.textContent = 'Solo el administrador puede aprobar solicitudes.';
-    return;
-  }
-  try{
-    cont.textContent = 'Cargando solicitudes...';
-    var rows = await window.supabaseRequest('/rest/v1/password_reset_requests?select=id,usuario,email,estado,creado_en,aprobado_por,aprobado_en&estado=in.(pendiente,aprobada)&order=estado.desc,creado_en.desc&limit=30');
-    var vistos = {};
-    rows = (rows || []).filter(function(row){
-      var key = String(row.email || row.usuario || '').toLowerCase();
-      if(row.estado === 'aprobada' && vistos[key]) return false;
-      vistos[key] = true;
-      return true;
-    });
-    if(!rows || !rows.length){
-      cont.textContent = 'No hay solicitudes pendientes.';
-      return;
-    }
-    cont.innerHTML = '<div style="display:grid;gap:8px;">' + rows.map(function(row){
-      var fecha = typeof fechaVistaSistema === 'function' ? fechaVistaSistema(row.creado_en) : String(row.creado_en || '').slice(0,10);
-      var btn = row.estado === 'pendiente'
-        ? '<button class="sp-btn" onclick="aprobarSolicitudPassword(&quot;' + String(row.id).replace(/"/g,'&quot;') + '&quot;)">Aprobar</button>'
-        : '<span style="font-weight:900;color:#15803d;">Aprobada</span>';
-      return '<div style="border:1px solid var(--border);border-radius:10px;padding:9px;background:var(--card-bg);display:grid;gap:6px;">'
-        + '<strong>' + String(row.usuario || row.email || '').replace(/</g,'&lt;') + '</strong>'
-        + '<span>Estado: ' + String(row.estado || '').replace(/</g,'&lt;') + ' - ' + fecha + '</span>'
-        + btn
-        + '</div>';
-    }).join('') + '</div>';
-  }catch(error){
-    cont.textContent = 'No se pudieron cargar solicitudes: ' + (error.message || error);
-  }
-};
-
-window.aprobarSolicitudPassword = async function(id){
-  if(!id) return;
-  if(!confirm('Aprobar cambio de contraseña para esta solicitud?')) return;
-  try{
-    await window.supabaseRequest('/rest/v1/rpc/approve_password_reset', {
-      method:'POST',
-      body:{ p_request_id:id }
-    });
-    if(typeof showToast === 'function') showToast('Solicitud aprobada.');
-    cargarSolicitudesPassword();
-  }catch(error){
-    alert('No se pudo aprobar: ' + (error.message || error));
-  }
-};
-
 document.addEventListener('DOMContentLoaded', function(){
   var remember = document.getElementById('login-remember');
   if(remember) remember.checked = localStorage.getItem(window.AUTH_REMEMBER_KEY) !== '0';
