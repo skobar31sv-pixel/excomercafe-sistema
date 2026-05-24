@@ -2314,7 +2314,7 @@ select option{
   }
 
   body.smart-menu-collapsed .header::after{
-    content:"â˜°";
+    content:"\2630";
     width:42px;
     height:42px;
     display:flex;
@@ -2455,13 +2455,13 @@ body.smart-menu-collapsed .online-indicator,
   }
 
   body.smart-menu-collapsed .hbtn-chat::before{
-    content:"ðŸ’¬";
+    content:"\1F4AC";
     color:#ffffff;
     font-size:1rem;
   }
 
   body.smart-menu-collapsed .hbtn-settings::before{
-    content:"âš™";
+    content:"\2699";
     color:#ffffff;
     font-size:1rem;
   }
