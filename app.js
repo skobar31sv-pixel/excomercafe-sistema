@@ -391,6 +391,8 @@ async function validarAcceso(){
   }
   accesoActual = match;
   guardarAccesoPortal(agromercado, clave);
+  var loading = document.getElementById('portal-loading');
+  if(loading) loading.classList.add('hidden');
   document.getElementById('access-panel').classList.add('hidden');
   document.getElementById('sales-form').classList.remove('hidden');
   document.getElementById('agromercado-label').textContent = match.nombre;
@@ -404,6 +406,8 @@ function salirPortal(){
   accesoActual = null;
   detenerAutoRefresh();
   limpiarAccesoPortal();
+  var loading = document.getElementById('portal-loading');
+  if(loading) loading.classList.add('hidden');
   document.getElementById('sales-form').classList.add('hidden');
   document.getElementById('access-panel').classList.remove('hidden');
   document.getElementById('access-clave').value = '';
@@ -411,13 +415,28 @@ function salirPortal(){
 
 async function restaurarAccesoGuardado(){
   var access = leerAccesoPortal();
-  if(!access) return;
+  var loading = document.getElementById('portal-loading');
+  var panel = document.getElementById('access-panel');
+  if(!access){
+    if(loading) loading.classList.add('hidden');
+    if(panel) panel.classList.remove('hidden');
+    return;
+  }
   var agroEl = document.getElementById('access-agromercado');
   var claveEl = document.getElementById('access-clave');
-  if(!agroEl || !claveEl) return;
+  if(!agroEl || !claveEl){
+    if(loading) loading.classList.add('hidden');
+    if(panel) panel.classList.remove('hidden');
+    return;
+  }
   agroEl.value = access.agromercado;
   claveEl.value = access.clave;
-  await validarAcceso();
+  try{
+    await validarAcceso();
+  }finally{
+    if(loading) loading.classList.add('hidden');
+    if(!accesoActual && panel) panel.classList.remove('hidden');
+  }
 }
 
 function imprimirHojaVendedor(){
