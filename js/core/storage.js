@@ -638,19 +638,31 @@ window.registrarMovimientoInventario = function(movimiento) {
     // Leer inventario actual
     var inventario = JSON.parse(localStorage.getItem('inventario-data') || '[]');
     
+    var totalFirmado = (movimiento.arroz || 0)
+      + (movimiento.precocido || 0)
+      + (movimiento.frijol1 || 0)
+      + (movimiento.frijol4 || 0)
+      + (movimiento.aceite || 0)
+      + (movimiento.harina || 0);
+
     // Agregar el nuevo movimiento
     inventario.push({
       id: movimiento.id,
+      origenId: movimiento.origenId || movimiento.distribucionId || movimiento.registroId || '',
       fecha: movimiento.fecha,
       ubicacion: movimiento.ubicacion,
+      destino: movimiento.destino || movimiento.lugar || '',
       lugar: movimiento.lugar || 'Sin especificar',
+      agromercado: movimiento.agromercado || movimiento.destino || movimiento.lugar || '',
+      tipo: movimiento.tipo || '',
+      referencia: movimiento.referencia || '',
       arroz: movimiento.arroz || 0,
       precocido: movimiento.precocido || 0,
       frijol1: movimiento.frijol1 || 0,
       frijol4: movimiento.frijol4 || 0,
       aceite: movimiento.aceite || 0,
       harina: movimiento.harina || 0,
-      total: Math.abs((movimiento.arroz || 0) + (movimiento.precocido || 0) + (movimiento.frijol1 || 0) + (movimiento.frijol4 || 0) + (movimiento.aceite || 0) + (movimiento.harina || 0)),
+      total: totalFirmado,
       observaciones: movimiento.tipo + ' - ' + movimiento.referencia,
       timestamp: new Date().toISOString()
     });
