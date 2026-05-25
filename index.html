@@ -4,7 +4,7 @@
 <title>EXCOMERCAFE — Reporte Agromercados</title>
 <link rel="icon" href="./favicon.ico"> <!-- icon -->
 <link rel="apple-touch-icon" href="./favicon.png">
-<link href="./css/styles.css?v=20260521-guia-ajustes" rel="stylesheet">
+<link href="./css/styles.css?v=20260525-inventario-sync" rel="stylesheet">
 <link href="./css/components.css?v=20260519-phase61" rel="stylesheet">
 <link href="./css/distribution-matrix.css?v=20260521-normal-theme" rel="stylesheet">
 <script>
@@ -7846,6 +7846,26 @@ function refrescarInventarioEnTiempoReal() {
   if (typeof renderInventarioResumen === 'function') renderInventarioResumen();
 }
 
+function numeroInventario(valor){
+  return Number(valor || 0) || 0;
+}
+
+function totalInventarioRegistro(inv){
+  if (!inv) return 0;
+  var total = numeroInventario(inv.total);
+  if (total) return total;
+  return Math.abs(numeroInventario(inv.arroz))
+    + Math.abs(numeroInventario(inv.precocido))
+    + Math.abs(numeroInventario(inv.frijol1))
+    + Math.abs(numeroInventario(inv.frijol4))
+    + Math.abs(numeroInventario(inv.aceite))
+    + Math.abs(numeroInventario(inv.harina));
+}
+
+function celdaInventarioNumero(valor){
+  return '<td class="inv-num">' + numeroInventario(valor) + '</td>';
+}
+
 window.renderInventarioTable = function(){
   var tbody = document.getElementById('tbody-inventario');
   
@@ -7891,17 +7911,19 @@ window.renderInventarioTable = function(){
       destinoTexto = inv.lugarEspecifico || inv.lugar || inv.destino || '';
     }
     
+    inv.total = totalInventarioRegistro(inv);
+
     return '<tr>'
       + '<td>' + fechaVistaSistema(inv.fecha) + '</td>'
       + '<td>' + horaVistaSistema(inv) + '</td>'
-      + '<td>' + ubicacionTexto + '</td>'
-      + '<td>' + inv.arroz + '</td>'
-      + '<td>' + inv.precocido + '</td>'
-      + '<td>' + inv.frijol1 + '</td>'
-      + '<td>' + inv.frijol4 + '</td>'
-      + '<td>' + inv.aceite + '</td>'
-      + '<td>' + inv.harina + '</td>'
-      + '<td><strong>' + inv.total + '</strong></td>'
+      + '<td class="inv-location">' + ubicacionTexto + '</td>'
+      + celdaInventarioNumero(inv.arroz)
+      + celdaInventarioNumero(inv.precocido)
+      + celdaInventarioNumero(inv.frijol1)
+      + celdaInventarioNumero(inv.frijol4)
+      + celdaInventarioNumero(inv.aceite)
+      + celdaInventarioNumero(inv.harina)
+      + '<td class="inv-num inv-total"><strong>' + inv.total + '</strong></td>'
       + '<td>' + (inv.observaciones || '') + '</td>'
       + '<td style="text-align:center;">'
         + '<button class="btn btn-sm btn-danger" onclick="eliminarInventario(\'' + inv.id + '\')" style="padding:2px 6px;font-size:0.7rem;">🗑️</button>'
@@ -7956,17 +7978,19 @@ window.renderInventarioTableFiltrado = function(datosFiltrados){
       destinoTexto = (inv.lugarEspecifico || inv.lugar || inv.destino || '');
     }
     
+    inv.total = totalInventarioRegistro(inv);
+
     return '<tr>'
       + '<td>' + fechaVistaSistema(inv.fecha) + '</td>'
       + '<td>' + horaVistaSistema(inv) + '</td>'
-      + '<td>' + ubicacionTexto + '</td>'
-      + '<td>' + inv.arroz + '</td>'
-      + '<td>' + inv.precocido + '</td>'
-      + '<td>' + inv.frijol1 + '</td>'
-      + '<td>' + inv.frijol4 + '</td>'
-      + '<td>' + inv.aceite + '</td>'
-      + '<td>' + inv.harina + '</td>'
-      + '<td><strong>' + inv.total + '</strong></td>'
+      + '<td class="inv-location">' + ubicacionTexto + '</td>'
+      + celdaInventarioNumero(inv.arroz)
+      + celdaInventarioNumero(inv.precocido)
+      + celdaInventarioNumero(inv.frijol1)
+      + celdaInventarioNumero(inv.frijol4)
+      + celdaInventarioNumero(inv.aceite)
+      + celdaInventarioNumero(inv.harina)
+      + '<td class="inv-num inv-total"><strong>' + inv.total + '</strong></td>'
       + '<td>' + (inv.observaciones || '') + '</td>'
       + '<td style="text-align:center;">'
         + '<button class="btn btn-sm btn-danger" onclick="eliminarInventario(\'' + inv.id + '\')" style="padding:2px 6px;font-size:0.7rem;">🗑️</button>'
@@ -8042,7 +8066,13 @@ window.eliminarInventario = function(id){
   
   inventarioData = inventarioData.filter(function(i){ return i.id !== id; });
   localStorage.setItem('inventario-data', JSON.stringify(inventarioData));
-  eliminarSupabasePorLocalId('inventario_movimientos', id);
+  eliminarSupabasePorLocalId('inventario_movimientos', id).finally(function(){
+    if (typeof window.sincronizarPendientesSupabase === 'function') {
+      window.sincronizarPendientesSupabase({ noInterrupt:true, silent:true }).catch(function(error){
+        console.warn('No se pudo sincronizar eliminacion de inventario:', error);
+      });
+    }
+  });
   refrescarInventarioEnTiempoReal();
   showAlert('alert-inventario', '🗑️ Registro eliminado', 'ok');
 };
@@ -8050,8 +8080,14 @@ window.eliminarInventario = function(id){
 window.limpiarHistorialInventario = function(){
   if(!confirm('¿Eliminar todo el historial de inventario? Esta acción no se puede deshacer.')) return;
   
+  var ids = (inventarioData || []).map(function(item){ return item && (item.local_id || item.id); }).filter(Boolean);
   inventarioData = [];
   localStorage.removeItem('inventario-data');
+  ids.forEach(function(id){
+    eliminarSupabasePorLocalId('inventario_movimientos', id).catch(function(error){
+      console.warn('No se pudo borrar movimiento de inventario en Supabase:', error);
+    });
+  });
   refrescarInventarioEnTiempoReal();
   showAlert('alert-inventario', '🗑️ Historial eliminado', 'ok');
 };
@@ -17252,12 +17288,19 @@ document.addEventListener('DOMContentLoaded', function() {
       if (Object.prototype.hasOwnProperty.call(existing, id)) {
         var currentIndex = existing[id];
         var currentRecord = local[currentIndex] || {};
-        if (config.storageKey === 'personas-data' && currentRecord.supabase_synced !== false) {
-          var remoteRecord = row.payload;
+        if (currentRecord.supabase_synced !== false) {
+          var remoteRecord = row.payload || {};
           remoteRecord.local_id = id;
+          if (config.storageKey === 'inventario-data') {
+            remoteRecord.total = num(remoteRecord.total) || Math.abs(num(remoteRecord.arroz)) + Math.abs(num(remoteRecord.precocido)) + Math.abs(num(remoteRecord.frijol1)) + Math.abs(num(remoteRecord.frijol4)) + Math.abs(num(remoteRecord.aceite)) + Math.abs(num(remoteRecord.harina));
+          }
           remoteRecord.supabase_synced = true;
           remoteRecord.supabase_synced_at = row.creado_en || row.actualizado_en || new Date().toISOString();
-          if (JSON.stringify(currentRecord) !== JSON.stringify(remoteRecord)) {
+          var comparableCurrent = Object.assign({}, currentRecord);
+          delete comparableCurrent.supabase_synced_at;
+          var comparableRemote = Object.assign({}, remoteRecord);
+          delete comparableRemote.supabase_synced_at;
+          if (JSON.stringify(comparableCurrent) !== JSON.stringify(comparableRemote)) {
             local[currentIndex] = remoteRecord;
             updated++;
           }
