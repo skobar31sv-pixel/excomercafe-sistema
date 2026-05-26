@@ -8098,17 +8098,51 @@ window.eliminarInventario = function(id){
   showAlert('alert-inventario', idsRemotos.length > 1 ? 'Movimiento completo eliminado del inventario' : 'Registro eliminado', 'ok');
 };
 
-window.limpiarHistorialInventario = function(){
+window.limpiarHistorialInventario = async function(){
   if(!confirm('¿Eliminar todo el historial de inventario? Esta acción no se puede deshacer.')) return;
-  
-  var ids = (inventarioData || []).map(function(item){ return item && (item.local_id || item.id); }).filter(Boolean);
-  inventarioData = [];
-  localStorage.removeItem('inventario-data');
-  ids.forEach(function(id){
-    eliminarSupabasePorLocalId('inventario_movimientos', id).catch(function(error){
-      console.warn('No se pudo borrar movimiento de inventario en Supabase:', error);
-    });
+
+  var corteInventario = new Date().toISOString();
+  var localActual = [];
+  try { localActual = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(error) { localActual = []; }
+  var idsMap = {};
+  (inventarioData || []).concat(localActual || []).forEach(function(item){
+    var id = item && (item.local_id || item.id);
+    if (id) idsMap[String(id)] = true;
   });
+  var ids = Object.keys(idsMap);
+  inventarioData = [];
+  localStorage.setItem('inventario-data', '[]');
+  localStorage.setItem('inventario-clear-before', corteInventario);
+  ['inventario-registros', 'inventario-historial', 'exc_inventario_hist'].forEach(function(key){
+    localStorage.removeItem(key);
+  });
+
+  if (window.supabaseRequest && window.haySesionSupabase && window.haySesionSupabase()) {
+    try {
+      await window.supabaseRequest('/rest/v1/inventario_movimientos?local_id=not.is.null', {
+        method: 'DELETE',
+        prefer: 'return=minimal'
+      });
+    } catch(error) {
+      console.warn('No se pudo borrar inventario remoto completo, se intentara por registro:', error);
+      await Promise.all(ids.map(function(id){
+        return eliminarSupabasePorLocalId('inventario_movimientos', id).catch(function(deleteError){
+          console.warn('No se pudo borrar movimiento de inventario en Supabase:', deleteError);
+        });
+      }));
+    }
+  }
+
+  if (typeof window.supabaseRlsBlockedTables === 'object') {
+    delete window.supabaseRlsBlockedTables.inventario_movimientos;
+  }
+
+  if (typeof window.sincronizarPendientesSupabase === 'function') {
+    window.sincronizarPendientesSupabase({ noInterrupt:true, silent:true }).catch(function(error){
+      console.warn('No se pudo confirmar limpieza de inventario con Supabase:', error);
+    });
+  }
+
   refrescarInventarioEnTiempoReal();
   showAlert('alert-inventario', '🗑️ Historial eliminado', 'ok');
 };
@@ -17302,10 +17336,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var updated = 0;
     var removed = 0;
     var remoteIds = {};
+    var inventarioClearBefore = config.storageKey === 'inventario-data'
+      ? localStorage.getItem('inventario-clear-before')
+      : '';
 
     (rows || []).reverse().forEach(function(row){
       if (!row || !row.payload) return;
       var id = String(row.local_id || localId(row.payload));
+      if (inventarioClearBefore && row.creado_en && String(row.creado_en) <= String(inventarioClearBefore)) {
+        return;
+      }
       remoteIds[id] = true;
       if (Object.prototype.hasOwnProperty.call(existing, id)) {
         var currentIndex = existing[id];
