@@ -7872,15 +7872,22 @@ function claseTotalInventario(total){
   return '';
 }
 
+function inventarioVisibleEnHistorial(inv){
+  if (!inv) return false;
+  var tipo = String(inv.tipo || '').toLowerCase();
+  return ['salida-distribucion', 'entrada-distribucion'].indexOf(tipo) < 0;
+}
+
 window.renderInventarioTable = function(){
   var tbody = document.getElementById('tbody-inventario');
+  var historialVisible = (inventarioData || []).filter(inventarioVisibleEnHistorial);
   
-  if(inventarioData.length === 0){
+  if(historialVisible.length === 0){
     tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No hay registros de inventario.</td></tr>';
     return;
   }
   
-  tbody.innerHTML = inventarioData.map(function(inv){
+  tbody.innerHTML = historialVisible.map(function(inv){
     var ubicacionTexto = '';
     var destinoTexto = '';
     
@@ -7941,6 +7948,7 @@ window.renderInventarioTable = function(){
 // Render filtrado para búsqueda - Copia segura del render original
 window.renderInventarioTableFiltrado = function(datosFiltrados){
   var tbody = document.getElementById('tbody-inventario');
+  datosFiltrados = (datosFiltrados || []).filter(inventarioVisibleEnHistorial);
   
   if(datosFiltrados.length === 0){
     tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No se encontraron resultados.</td></tr>';
@@ -8018,6 +8026,7 @@ window.filtrarInventario = function(){
   terminoBusqueda = terminoBusqueda.toLowerCase();
   
   var datosFiltrados = inventarioData.filter(function(inv){
+    if (!inventarioVisibleEnHistorial(inv)) return false;
     return (
       (inv.fecha || '').includes(terminoBusqueda) ||
       (inv.ubicacion || '').toLowerCase().includes(terminoBusqueda) ||
