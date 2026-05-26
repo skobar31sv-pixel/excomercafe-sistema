@@ -470,12 +470,21 @@ window.obtenerInventarioActual = function() {
   }
 };
 
+window.inventarioEsMovimientoAutomaticoDistribucion = window.inventarioEsMovimientoAutomaticoDistribucion || function(item) {
+  var tipo = String(item && item.tipo || '').toLowerCase();
+  return tipo === 'salida-distribucion' || tipo === 'entrada-distribucion';
+};
+
+window.inventarioVisibleUsuario = window.inventarioVisibleUsuario || function(item) {
+  return !!item && !window.inventarioEsMovimientoAutomaticoDistribucion(item);
+};
+
 // Obtener stock por ubicación específica
 window.obtenerStockPorUbicacion = function(ubicacion) {
   try {
     var inventario = JSON.parse(localStorage.getItem('inventario-data') || '[]');
     var inventarioUbicacion = inventario.filter(function(item) {
-      return item.ubicacion === ubicacion;
+      return window.inventarioVisibleUsuario(item) && item.ubicacion === ubicacion;
     });
     
     // Agrupar por lugar si hay múltiples registros
@@ -646,6 +655,10 @@ window.registrarMovimientoInventario = function(movimiento) {
       + (movimiento.harina || 0);
 
     // Agregar el nuevo movimiento
+    if (window.inventarioEsMovimientoAutomaticoDistribucion(movimiento)) {
+      return { success: true, mensaje: 'Movimiento automatico de distribucion omitido del inventario visible' };
+    }
+
     inventario.push({
       id: movimiento.id,
       origenId: movimiento.origenId || movimiento.distribucionId || movimiento.registroId || '',
