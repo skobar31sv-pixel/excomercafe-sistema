@@ -819,6 +819,7 @@ async function refrescarPortalManual(){
 }
 
 async function cargarValoresInicialesRpc(agromercado, fecha){
+  return false;
   var response = await fetch(SUPABASE_CONFIG.url + '/rest/v1/rpc/portal_agromercado_stock', {
     method: 'POST',
     headers: {
@@ -858,7 +859,10 @@ async function cargarValoresInicialesAgromercado(agromercado){
     (distRows || []).forEach(function(row){
       PRODUCTOS.forEach(function(prod){
         var col = PRODUCTO_COLUMNAS[prod.key];
-        nuevos[prod.key] = n(nuevos[prod.key]) + n(row[col]);
+        var payload = row && row.payload && typeof row.payload === 'object' ? row.payload : {};
+        var unidades = payload.unidades || {};
+        var valor = unidades[prod.key] !== undefined ? unidades[prod.key] : row[col];
+        nuevos[prod.key] = n(nuevos[prod.key]) + n(valor);
       });
     });
   }catch(e){}
