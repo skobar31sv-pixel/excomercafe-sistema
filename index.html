@@ -15233,10 +15233,12 @@ document.addEventListener('DOMContentLoaded', function() {
       + '.reporte-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;border:1px solid #cfe0f1;background:#f8fbff;color:#0b2239;border-radius:8px;padding:12px 14px;font-weight:900;box-shadow:0 1px 2px rgba(15,23,42,.05);cursor:pointer;}'
       + '.reporte-btn small{display:block;margin-top:3px;color:#526a83;font-size:.72rem;font-weight:700;}'
       + '.reporte-btn:hover{background:#edf6ff;border-color:#9cc7ea;}'
-      + '.agro-date-indicator{margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.72rem;font-weight:850;color:#48627c;}'
-      + '.agro-date-pill{display:inline-flex;align-items:center;gap:5px;border:1px solid #cfe0f1;border-radius:999px;background:#f8fbff;color:#17456b;padding:4px 8px;line-height:1;cursor:default;}'
+      + '.agro-date-indicator{margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.72rem;font-weight:850;color:#48627c;max-height:84px;overflow:auto;padding-bottom:2px;}'
+      + '.agro-date-pill{display:inline-flex;align-items:center;gap:5px;max-width:100%;border:1px solid #cfe0f1;border-radius:999px;background:#f8fbff;color:#17456b;padding:4px 8px;line-height:1.15;cursor:default;}'
+      + '.agro-date-pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
       + '.agro-date-pill button{border:0;background:transparent;color:inherit;font:inherit;font-weight:900;cursor:pointer;padding:0;}'
       + '.agro-date-clear{display:inline-flex;align-items:center;border:1px solid #cfe0f1;border-radius:999px;background:#fff;color:#17456b;padding:4px 9px;font-size:.72rem;font-weight:900;line-height:1;cursor:pointer;}'
+      + '.agro-date-clear:hover{background:#edf6ff;border-color:#9cc7ea;}'
       + '.agro-date-pill::before{content:"";width:8px;height:8px;border-radius:999px;background:#94a3b8;}'
       + '.agro-date-pill.amarillo{background:#fef3c7;border-color:#fde68a;color:#92400e;}'
       + '.agro-date-pill.amarillo::before{background:#f59e0b;}'
@@ -15253,12 +15255,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.limpiarIndicadorFechasControl = async function(){
     var fecha = fechaReporteControl();
-    if(!confirm('Limpiar estados rechazados de esta fecha?')) return;
+    if(!confirm('Limpiar los reportes rechazados de ' + fechaVistaSistema(fechaReporteNormalizada(fecha)) + '?')) return;
     try {
       if(window.supabaseRequest) {
         await window.supabaseRequest('/rest/v1/ventas_agromercado_pendientes?fecha=eq.' + encodeURIComponent(fechaReporteNormalizada(fecha)) + '&estado=eq.rechazado', {
           method:'DELETE',
           prefer:'return=minimal'
+        });
+      }
+      if(Array.isArray(window.ventasPendientesCache)) {
+        window.ventasPendientesCache = window.ventasPendientesCache.filter(function(row){
+          return !(fechaReporteIgual(row && row.fecha, fecha) && String(row && row.estado || '').toLowerCase() === 'rechazado');
         });
       }
       if(typeof showToast === 'function') showToast('Estados rechazados limpiados.');
@@ -15331,55 +15338,87 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.setFechaControlVenta = setFechaControl;
 
+  function nombreAgroReporte(row){
+    return String((row && (row.agromercado || row.nombre)) || '').trim();
+  }
+
+  function resumenNombresAgro(nombres){
+    nombres = (nombres || []).filter(Boolean);
+    if(!nombres.length) return '';
+    var vistos = {};
+    var unicos = [];
+    nombres.forEach(function(nombre){
+      var key = normText(nombre);
+      if(!key || vistos[key]) return;
+      vistos[key] = true;
+      unicos.push(nombre);
+    });
+    var visibles = unicos.slice(0, 3);
+    return visibles.join(', ') + (unicos.length > visibles.length ? ' +' + (unicos.length - visibles.length) : '');
+  }
+
+  function chipEstadoFecha(cls, label, nombres){
+    var lista = resumenNombresAgro(nombres);
+    var title = nombres && nombres.length ? nombres.join(', ') : label;
+    return '<span class="agro-date-pill ' + cls + '" title="' + esc(title) + '"><span>' + esc(label + (lista ? ': ' + lista : '')) + '</span></span>';
+  }
+
   function actualizarIndicadorFechasControl(pendientes, aprobados, rechazados){
     var cont = document.getElementById('agro-fecha-indicador');
     var input = document.getElementById('agro-fecha');
     if(!cont || !input) return;
     var actual = fechaReporteNormalizada(fechaReporteControl());
-    var fechas = {};
+    var grupos = {
+      pendiente: [],
+      rechazado: [],
+      aprobado: []
+    };
+    var estadoPorAgro = {};
     function add(rows, estado){
       (rows || []).forEach(function(row){
         var fecha = fechaReporteNormalizada(row && row.fecha);
-        if(!fecha) return;
-        if(!fechas[fecha]) fechas[fecha] = { fecha:fecha, pendiente:0, aprobado:0, rechazado:0 };
-        if(estado === 'pendiente') fechas[fecha].pendiente++;
-        else if(estado === 'aprobado') fechas[fecha].aprobado++;
-        else if(estado === 'rechazado') fechas[fecha].rechazado++;
+        if(!fecha || fecha !== actual) return;
+        var nombre = nombreAgroReporte(row);
+        if(!nombre) return;
+        var key = normText(nombre);
+        if(!key) return;
+        if(estado === 'pendiente') {
+          estadoPorAgro[key] = 'pendiente';
+          grupos.pendiente.push(nombre);
+        } else if(estado === 'rechazado') {
+          if(estadoPorAgro[key] !== 'pendiente') estadoPorAgro[key] = 'rechazado';
+          grupos.rechazado.push(nombre);
+        } else if(estado === 'aprobado') {
+          if(!estadoPorAgro[key]) estadoPorAgro[key] = 'aprobado';
+          grupos.aprobado.push(nombre);
+        }
       });
     }
     add(pendientes, 'pendiente');
-    add(aprobados, 'aprobado');
     add(rechazados, 'rechazado');
+    add(aprobados, 'aprobado');
+
+    var sinReporte = getAllAgromercadosVenta().filter(function(agro){
+      return !estadoPorAgro[normText(agro && agro.nombre)];
+    }).map(function(agro){ return agro.nombre; });
 
     input.classList.remove('fecha-amarilla', 'fecha-verde', 'fecha-roja');
-    var hoy = fechas[actual];
-    var estadoActual = 'rojo';
-    var textoActual = 'Sin reporte en esta fecha';
-    if(hoy && hoy.pendiente){
-      estadoActual = 'amarillo';
-      textoActual = hoy.pendiente + ' pendiente(s) en esta fecha';
+    if(grupos.pendiente.length){
       input.classList.add('fecha-amarilla');
-    } else if(hoy && hoy.aprobado){
-      estadoActual = 'verde';
-      textoActual = hoy.aprobado + ' aprobado(s) en esta fecha';
-      input.classList.add('fecha-verde');
-    } else if(hoy && hoy.rechazado){
-      estadoActual = 'rojo';
-      textoActual = hoy.rechazado + ' rechazado(s) en esta fecha';
+    } else if(grupos.rechazado.length){
       input.classList.add('fecha-roja');
+    } else if(grupos.aprobado.length){
+      input.classList.add('fecha-verde');
     } else {
       input.classList.add('fecha-roja');
     }
 
-    var resumen = '<span class="agro-date-pill ' + estadoActual + '">' + esc(textoActual) + '</span>'
-      + '<button type="button" class="agro-date-clear" onclick="limpiarIndicadorFechasControl()">Limpiar</button>';
-    var botones = Object.keys(fechas).sort().reverse().slice(0, 10).map(function(fecha){
-      var item = fechas[fecha];
-      var cls = item.pendiente ? 'amarillo' : (item.aprobado ? 'verde' : 'rojo');
-      var label = fecha + (item.pendiente ? ' pendiente' : (item.aprobado ? ' aprobado' : ' rechazado'));
-      return '<span class="agro-date-pill ' + cls + '"><button type="button" onclick="setFechaControlVenta(&quot;' + esc(fecha) + '&quot;)">' + esc(label) + '</button></span>';
-    }).join('');
-    cont.innerHTML = resumen + botones;
+    var html = '<button type="button" class="agro-date-clear" onclick="limpiarIndicadorFechasControl()">Limpiar</button>'
+      + chipEstadoFecha('amarillo', grupos.pendiente.length + ' pendiente(s)', grupos.pendiente)
+      + chipEstadoFecha('rojo', grupos.rechazado.length + ' rechazado(s)', grupos.rechazado)
+      + chipEstadoFecha('verde', grupos.aprobado.length + ' aprobado(s)', grupos.aprobado)
+      + chipEstadoFecha('rojo', sinReporte.length + ' sin reporte', sinReporte);
+    cont.innerHTML = html;
   }
 
   function pendingRowToHist(row){
