@@ -1321,6 +1321,30 @@ datalist {
   color: var(--text);
 }
 
+.warehouse-bodega-grids {
+  display: grid;
+  gap: 14px;
+}
+
+.warehouse-bodega-card {
+  overflow: auto;
+}
+
+.warehouse-bodega-card h4 {
+  margin: 0 0 8px;
+  color: var(--navy);
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.warehouse-bodega-card .warehouse-balance-table td:first-child {
+  min-width: 220px;
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
 .resumen-stock-live small {
   display: block;
   margin-top: 3px;
@@ -1493,6 +1517,30 @@ body {
 .warehouse-balance-actions > span {
   font-weight: 900;
   color: var(--text-primary);
+}
+
+.warehouse-bodega-grids {
+  display: grid;
+  gap: 14px;
+}
+
+.warehouse-bodega-card {
+  overflow: auto;
+}
+
+.warehouse-bodega-card h4 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.warehouse-bodega-card .warehouse-balance-table td:first-child {
+  min-width: 220px;
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .resumen-stock-live small {

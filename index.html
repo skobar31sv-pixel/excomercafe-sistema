@@ -2106,16 +2106,13 @@
   <div class="card warehouse-balance-card" id="cuadre-bodegas-card">
     <div class="card-body">
       <div class="warehouse-table-wrap">
-        <table class="warehouse-balance-table" id="tabla-cuadre-bodegas">
-          <thead id="thead-cuadre-bodegas"></thead>
-          <tbody id="tbody-cuadre-bodegas"></tbody>
-        </table>
+        <div id="cuadre-bodegas-grids" class="warehouse-bodega-grids"></div>
       </div>
       <div class="warehouse-balance-actions">
         <span>Cuadre de Bodegas</span>
         <div class="flex gap-8 items-center flex-wrap">
           <input type="date" id="cuadre-bodega-fecha" onchange="renderCuadreBodegas()" style="max-width:160px;">
-          <button type="button" class="btn btn-sm btn-primary" onclick="imprimirTablasPorTitulo('Cuadre de Bodegas', ['#tabla-cuadre-bodegas'])">Imprimir</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="imprimirTablasPorTitulo('Cuadre de Bodegas', ['#cuadre-bodegas-card'])">Imprimir</button>
           <button class="btn btn-sm btn-success" onclick="guardarCuadreBodegas()">Guardar Cuadre</button>
           <button class="btn btn-sm btn-secondary" onclick="toggleInventarioManual()">Ir al Registro</button>
         </div>
@@ -16751,6 +16748,37 @@ document.addEventListener('DOMContentLoaded', function() {
     { key:'diferencias', label:'Diferencias', calc:true, diff:true }
   ];
 
+  var BODEGA_BALANCES = [
+    {
+      key: 'tiendona',
+      title: 'Bodega Tiendona',
+      locations: ['descargas-tiendona','descargas-tiendona-abajo','descargas-tiendona-arriba'],
+      distributionKey: 'descargas-data'
+    },
+    {
+      key: 'cda-soyapango',
+      title: 'CDA Soyapango',
+      locations: ['distribucion-cda','distribucion-cda-soyapango','cda'],
+      distributionKey: 'distribucion-cda-data',
+      distributionFilter: function(row){
+        var destino = String(row && (row.cda || row.agromercado || row.destino || '')).toLowerCase();
+        var lugar = String(row && (row.lugar || row.ubicacion || '')).toLowerCase();
+        return destino.indexOf('usul') < 0 && lugar.indexOf('usul') < 0;
+      }
+    },
+    {
+      key: 'cda-usulutan',
+      title: 'CDA Usulutan',
+      locations: ['distribucion-cda-usulutan'],
+      distributionKey: 'distribucion-cda-data',
+      distributionFilter: function(row){
+        var destino = String(row && (row.cda || row.agromercado || row.destino || '')).toLowerCase();
+        var lugar = String(row && (row.lugar || row.ubicacion || '')).toLowerCase();
+        return destino.indexOf('usul') >= 0 || lugar.indexOf('usul') >= 0;
+      }
+    }
+  ];
+
   var emptyProducts = function(){
     return BODEGA_PRODUCTS.reduce(function(acc, p){ acc[p.key] = 0; return acc; }, {});
   };
@@ -16820,6 +16848,62 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
     return totals;
+  }
+
+  function isAutoDistributionItem(item){
+    var tipo = String(item && item.tipo || '').toLowerCase();
+    return tipo === 'salida-distribucion' || tipo === 'entrada-distribucion' || tipo === 'reversa-distribucion';
+  }
+
+  function sumManualInventoryByLocation(locations, fecha, mode){
+    var totals = emptyProducts();
+    var inv = [];
+    try { inv = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(e) {}
+    inv.forEach(function(item){
+      if (!item || !locations.includes(item.ubicacion)) return;
+      if (isAutoDistributionItem(item)) return;
+      if (mode === 'before' && !beforeDate(item.fecha, fecha)) return;
+      if (mode === 'same' && !sameDate(item.fecha, fecha)) return;
+      addTo(totals, item, 1);
+    });
+    return totals;
+  }
+
+  function sumWarehouseDistributions(config, fecha){
+    var totals = emptyProducts();
+    var data = [];
+    try { data = JSON.parse(localStorage.getItem(config.distributionKey || '') || '[]'); } catch(e) {}
+    data.forEach(function(row){
+      if (!row) return;
+      if (fecha && !sameDate(row.fecha, fecha)) return;
+      if (typeof config.distributionFilter === 'function' && !config.distributionFilter(row)) return;
+      BODEGA_PRODUCTS.forEach(function(p){
+        totals[p.key] += Math.max(0, num(row[p.key]));
+      });
+    });
+    return totals;
+  }
+
+  function calculateWarehouseBalance(config, fecha){
+    var anterior = sumManualInventoryByLocation(config.locations, fecha, 'before');
+    var nuevo = sumManualInventoryByLocation(config.locations, fecha, 'same');
+    var enviado = sumWarehouseDistributions(config, fecha);
+    var suma = emptyProducts();
+    var final = emptyProducts();
+    var diferencia = emptyProducts();
+    BODEGA_PRODUCTS.forEach(function(p){
+      suma[p.key] = anterior[p.key] + nuevo[p.key];
+      final[p.key] = suma[p.key] - enviado[p.key];
+      diferencia[p.key] = suma[p.key] - enviado[p.key] - final[p.key];
+    });
+    return {
+      anterior: anterior,
+      nuevo: nuevo,
+      suma: suma,
+      enviado: enviado,
+      final: final,
+      diferencia: diferencia
+    };
   }
 
   function sumProducts(){
@@ -16918,11 +17002,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }).join('') + '</tr>';
   }
 
+  function renderBodegaBalanceTable(config, fecha){
+    var data = calculateWarehouseBalance(config, fecha);
+    var rows = [
+      { key:'anterior', label:'Inventario Dia Anterior' },
+      { key:'nuevo', label:'Nuevo Inventario' },
+      { key:'suma', label:'SUMA INVENTARIO', className:'warehouse-sum-row' },
+      { key:'enviado', label:'Envio Agromercado' },
+      { key:'final', label:'Inventario Final' },
+      { key:'diferencia', label:'DIFERENCIA', className:'warehouse-diff-row', diff:true }
+    ];
+    return '<div class="warehouse-bodega-card">'
+      + '<h4>' + config.title + '</h4>'
+      + '<table class="warehouse-balance-table">'
+      + '<thead><tr><th></th>' + BODEGA_PRODUCTS.map(function(p){ return '<th>' + p.label + '</th>'; }).join('') + '</tr></thead>'
+      + '<tbody>' + rows.map(function(row){
+        var values = data[row.key] || emptyProducts();
+        return '<tr class="' + (row.className || '') + '"><td>' + row.label + '</td>'
+          + BODEGA_PRODUCTS.map(function(p){
+            var value = num(values[p.key]);
+            var status = row.diff ? (value === 0 ? ' warehouse-ok' : ' warehouse-bad') : '';
+            return '<td class="warehouse-value' + status + '">' + value + '</td>';
+          }).join('')
+          + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
   window.renderCuadreBodegas = function(){
     var fechaInput = document.getElementById('cuadre-bodega-fecha');
     if (fechaInput) fechaInput.value = today();
     var fecha = fechaInput ? fechaInput.value : today();
     var rows = calculateRows(fecha);
+
+    var grids = document.getElementById('cuadre-bodegas-grids');
+    if (grids) {
+      grids.innerHTML = BODEGA_BALANCES.map(function(config){
+        return renderBodegaBalanceTable(config, fecha);
+      }).join('');
+      return;
+    }
 
     renderHeader('thead-cuadre-bodegas');
 
