@@ -191,7 +191,6 @@
   body.auth-locked .header,
   body.auth-locked .tabs,
   body.auth-locked main,
-  body.auth-locked .codex-mini-dock,
   body.auth-locked .chat-panel,
   body.auth-locked .settings-overlay,
   body.auth-locked .sidebar-mobile-toggle{
@@ -415,16 +414,11 @@
     font-size:1.05rem;
     cursor:pointer;
   }
-  .codex-mini-dock{
-    display:none;
-    justify-content:flex-end;
+  .settings-radio-box{
+    margin-top:12px;
+    display:grid;
     gap:8px;
-    align-items:center;
-    padding:8px 14px;
-    background:#eef6ff;
-    border-bottom:1px solid #cfe0f1;
   }
-  .codex-mini-dock.radio-visible{display:flex;}
   .radio-player,
   .radio-supra-player{
     display:flex;
@@ -516,7 +510,6 @@
     color:#475569;
   }
   @media(max-width:720px){
-    .codex-mini-dock{padding:7px 8px;}
     .radio-player,
     .radio-supra-player{justify-content:space-between;}
   }
@@ -993,15 +986,6 @@
     <button class="hbtn hbtn-settings" onclick="openSettings()">⚙️ Ajustes</button>
   </div>
 </header>
-<div class="codex-mini-dock" id="codex-mini-dock">
-  <div class="radio-player">
-    <span>Radio</span>
-    <select id="radio-station-select" onchange="cambiarRadioDock()"></select>
-    <button type="button" id="radio-play-btn" onclick="toggleRadioDock()">Play</button>
-    <a id="radio-open-link" href="https://radios.com.sv/" target="_blank" rel="noopener">Abrir</a>
-    <audio id="radio-dock-audio" preload="none"></audio>
-  </div>
-</div>
 <input type="file" id="logo-input" accept="image/*" onchange="cambiarLogo(this)" style="display:none;">
 
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
@@ -2691,29 +2675,14 @@
         <div class="sp-sub" style="margin-top:8px;">Crea un respaldo completo en formato EXCOMERCAFE (.json) para restaurar en otra PC.</div>
         <div class="sp-sub" id="backup-last-status" style="margin-top:8px;color:var(--muted);font-size:0.78rem;">Listo.</div>
 
-        <div style="margin-top:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div style="font-weight:800;color:var(--text-primary);">Historial de respaldos</div>
-            <button class="sp-btn" onclick="backupLimpiarHistorial()" style="background:transparent;border:1px solid var(--border);color:var(--text-primary);">Limpiar</button>
-          </div>
-          <div style="margin-top:8px;max-height:240px;overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);">
-            <table class="tbl" style="font-size:0.78rem;">
-              <thead>
-                <tr>
-                  <th style="position:sticky;top:0;">Fecha</th>
-                  <th style="position:sticky;top:0;">Hora</th>
-                  <th style="position:sticky;top:0;">Usuario</th>
-                  <th style="position:sticky;top:0;">Origen</th>
-                  <th style="position:sticky;top:0;">Tablas</th>
-                  <th style="position:sticky;top:0;">Registros</th>
-                  <th style="position:sticky;top:0;">Resultado</th>
-                  <th style="position:sticky;top:0;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="backup-history-tbody">
-                <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:12px;">Sin respaldos aún.</td></tr>
-              </tbody>
-            </table>
+        <div class="settings-radio-box">
+          <div style="font-weight:800;color:var(--text-primary);">Radios</div>
+          <div class="radio-player">
+            <span>Radio</span>
+            <select id="radio-station-select" onchange="cambiarRadioDock()"></select>
+            <button type="button" id="radio-play-btn" onclick="toggleRadioDock()">Play</button>
+            <a id="radio-open-link" href="https://radios.com.sv/" target="_blank" rel="noopener">Abrir</a>
+            <audio id="radio-dock-audio" preload="none"></audio>
           </div>
         </div>
       </div>
@@ -2884,15 +2853,13 @@ function usuarioPuedeVerRadio(session){
 }
 
 function actualizarRadioSupraVisible(session){
-  var dock = document.getElementById('codex-mini-dock');
-  if(!dock) return;
   var visible = usuarioPuedeVerRadio(session || window.authSession);
-  dock.classList.toggle('radio-visible', visible);
   if(!visible) {
     var audio = document.getElementById('radio-dock-audio');
     var btn = document.getElementById('radio-play-btn');
     if(audio) audio.pause();
     if(btn) btn.textContent = 'Play';
+    localStorage.setItem('radio-dock-state', 'paused');
   }
 }
 
@@ -3704,6 +3671,8 @@ function radioDockSelected(){
 function inicializarRadioDock(){
   var select = document.getElementById('radio-station-select');
   var link = document.getElementById('radio-open-link');
+  var audio = document.getElementById('radio-dock-audio');
+  var btn = document.getElementById('radio-play-btn');
   if(!select || !window.RADIO_DOCK_STATIONS) return;
   if(!select.options.length) {
     select.innerHTML = window.RADIO_DOCK_STATIONS.map(function(station){
@@ -3715,6 +3684,21 @@ function inicializarRadioDock(){
     select.value = saved;
   }
   if(link) link.href = radioDockSelected().page || 'https://radios.com.sv/';
+  if(audio && btn) {
+    audio.addEventListener('pause', function(){
+      if(!audio.ended) {
+        btn.textContent = 'Play';
+        localStorage.setItem('radio-dock-state', 'paused');
+      }
+    });
+    audio.addEventListener('play', function(){
+      btn.textContent = 'Pausa';
+      localStorage.setItem('radio-dock-state', 'playing');
+    });
+    if(localStorage.getItem('radio-dock-state') === 'playing') {
+      setTimeout(function(){ reproducirRadioDock(true); }, 700);
+    }
+  }
 }
 
 window.cambiarRadioDock = function(){
@@ -3730,29 +3714,41 @@ window.cambiarRadioDock = function(){
   }
   if(btn) btn.textContent = 'Play';
   if(link) link.href = (station && station.page) || 'https://radios.com.sv/';
+  localStorage.setItem('radio-dock-state', 'paused');
 };
 
-window.toggleRadioDock = function(){
+function reproducirRadioDock(silent){
   var audio = document.getElementById('radio-dock-audio');
   var btn = document.getElementById('radio-play-btn');
   var station = radioDockSelected();
   if(!audio || !btn || !station) return;
   if(!station.url) {
-    if(typeof showToast === 'function') showToast('Abre esta radio en su pagina web.');
-    if(station.page) window.open(station.page, '_blank', 'noopener');
+    localStorage.setItem('radio-dock-state', 'paused');
+    if(!silent && typeof showToast === 'function') showToast('Abre esta radio en su pagina web.');
+    if(!silent && station.page) window.open(station.page, '_blank', 'noopener');
     return;
   }
   if(!audio.src) audio.src = station.url;
+  return audio.play().then(function(){
+    btn.textContent = 'Pausa';
+    localStorage.setItem('radio-dock-state', 'playing');
+  }).catch(function(){
+    btn.textContent = 'Play';
+    localStorage.setItem('radio-dock-state', 'paused');
+    if(!silent && typeof showToast === 'function') showToast('La radio no se pudo reproducir aqui. Usa Abrir.');
+  });
+}
+
+window.toggleRadioDock = function(){
+  var audio = document.getElementById('radio-dock-audio');
+  var btn = document.getElementById('radio-play-btn');
+  if(!audio || !btn) return;
   if(audio.paused) {
-    audio.play().then(function(){
-      btn.textContent = 'Pausa';
-    }).catch(function(){
-      btn.textContent = 'Play';
-      if(typeof showToast === 'function') showToast('La radio no se pudo reproducir aqui. Usa Abrir.');
-    });
+    reproducirRadioDock(false);
   } else {
     audio.pause();
     btn.textContent = 'Play';
+    localStorage.setItem('radio-dock-state', 'paused');
   }
 };
 
