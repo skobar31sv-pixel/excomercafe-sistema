@@ -2813,7 +2813,7 @@
 </div>
 <script src="./js/core/constants.js"></script>
 <script src="./js/utils/helpers.js"></script>
-<script src="./js/core/storage.js"></script>
+<script src="./js/core/storage.js?v=20260527-stock-distribucion"></script>
 <script src="./js/core/app.js"></script>
 <script>
 window.SUPABASE_CONFIG = {
@@ -14847,11 +14847,57 @@ document.addEventListener('DOMContentLoaded', function() {
     tbody.querySelectorAll('input.dist-qty').forEach(function(input){ input.value = '0'; });
   }
 
+  function movimientoInventarioExiste(id){
+    var inv = [];
+    try { inv = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(e) { inv = []; }
+    return inv.some(function(item){ return String(item && item.id || '') === String(id || ''); });
+  }
+
+  function registrarMovimientoDistribucionSeguro(movimiento){
+    if (!movimiento || !movimiento.id) return { success:false, mensaje:'Movimiento invalido' };
+    if (typeof registrarMovimientoInventario === 'function') {
+      try { registrarMovimientoInventario(movimiento); } catch(e) {}
+    }
+    if (movimientoInventarioExiste(movimiento.id)) return { success:true, mensaje:'Movimiento registrado' };
+
+    var inv = [];
+    try { inv = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(e) { inv = []; }
+    var total = PRODUCT_KEYS_DIST.reduce(function(acc, key){ return acc + normalizeNumber(movimiento[key]); }, 0);
+    inv.push({
+      id: movimiento.id,
+      origenId: movimiento.origenId || movimiento.distribucionId || movimiento.registroId || '',
+      fecha: movimiento.fecha,
+      ubicacion: movimiento.ubicacion,
+      destino: movimiento.destino || movimiento.lugar || '',
+      lugar: movimiento.lugar || 'Sin especificar',
+      agromercado: movimiento.agromercado || movimiento.destino || movimiento.lugar || '',
+      distrito: movimiento.distrito || '',
+      municipio: movimiento.municipio || '',
+      tipo: movimiento.tipo || '',
+      referencia: movimiento.referencia || '',
+      arroz: normalizeNumber(movimiento.arroz),
+      precocido: normalizeNumber(movimiento.precocido),
+      frijol1: normalizeNumber(movimiento.frijol1),
+      frijol4: normalizeNumber(movimiento.frijol4),
+      aceite: normalizeNumber(movimiento.aceite),
+      harina: normalizeNumber(movimiento.harina),
+      total: total,
+      observaciones: movimiento.observaciones || ((movimiento.tipo || '') + ' - ' + (movimiento.referencia || '')),
+      timestamp: new Date().toISOString(),
+      supabase_synced: false
+    });
+    localStorage.setItem('inventario-data', JSON.stringify(inv));
+    if (typeof inventarioData !== 'undefined') inventarioData = inv;
+    return { success:true, mensaje:'Movimiento registrado directo' };
+  }
+
+  window.registrarMovimientoDistribucionSeguro = registrarMovimientoDistribucionSeguro;
+
   function saveSourceSalida(row, tipo, id, fecha){
-    if (typeof registrarMovimientoInventario !== 'function') return;
     var source = sourceForDestino(row.destino, tipo);
-    registrarMovimientoInventario({
+    registrarMovimientoDistribucionSeguro({
       id: 'salida-' + id,
+      origenId: id,
       fecha: fecha,
       ubicacion: source,
       lugar: tipo,
@@ -14867,9 +14913,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function saveEntradaAgromercado(row, id, fecha, origen){
-    if (typeof registrarMovimientoInventario !== 'function') return;
-    registrarMovimientoInventario({
+    registrarMovimientoDistribucionSeguro({
       id: 'entrada-' + id,
+      origenId: id,
       fecha: fecha,
       ubicacion: 'agromercados',
       lugar: row.destino,
@@ -17190,6 +17236,7 @@ document.addEventListener('DOMContentLoaded', function() {
       showAlert('alert-descargas', 'Ingrese al menos una cantidad en la tabla.', 'err');
       return false;
     }
+    if (typeof window.validateSourceStockDistribucion === 'function' && !window.validateSourceStockDistribucion('TIENDONA', 'alert-descargas')) return false;
 
     var data = JSON.parse(localStorage.getItem('descargas-data') || '[]');
     var timestamp = Date.now();
@@ -17223,14 +17270,15 @@ document.addEventListener('DOMContentLoaded', function() {
         timestamp: new Date().toISOString()
       });
 
-      if (typeof registrarMovimientoInventario === 'function') {
+      if (typeof window.registrarMovimientoDistribucionSeguro === 'function') {
         var source = 'descargas-tiendona';
         if (typeof obtenerUbicacionesInventarioParaDestino === 'function') {
           var opciones = obtenerUbicacionesInventarioParaDestino(row.destino, 'TIENDONA');
           if (opciones && opciones[0] && opciones[0].value) source = opciones[0].value;
         }
-        registrarMovimientoInventario({
+        window.registrarMovimientoDistribucionSeguro({
           id: 'salida-' + id,
+          origenId: id,
           fecha: fecha,
           ubicacion: source,
           lugar: 'Tiendona',
@@ -17243,11 +17291,15 @@ document.addEventListener('DOMContentLoaded', function() {
           aceite: -unidades.aceite,
           harina: -unidades.harina
         });
-        registrarMovimientoInventario({
+        window.registrarMovimientoDistribucionSeguro({
           id: 'entrada-' + id,
+          origenId: id,
           fecha: fecha,
           ubicacion: 'agromercados',
           lugar: row.destino,
+          agromercado: row.destino,
+          distrito: row.distrito || '',
+          municipio: row.municipio || '',
           tipo: 'entrada-distribucion',
           referencia: 'Distribucion Tiendona - ' + [row.distrito, row.municipio].filter(Boolean).join(', '),
           arroz: unidades.arroz,
@@ -17264,8 +17316,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.descargasData = data;
     if (typeof actualizarHistorialDescargas === 'function') actualizarHistorialDescargas();
     if (typeof refrescarInventarioEnTiempoReal === 'function') refrescarInventarioEnTiempoReal();
-    if (typeof renderResumenInventarioTiendona === 'function') renderResumenInventarioTiendona();
     document.querySelectorAll('#tbody-distribucion-tiendona-fija input.dist-qty').forEach(function(input){ input.value = '0'; });
+    if (typeof renderResumenInventarioTiendona === 'function') renderResumenInventarioTiendona();
+    if (typeof renderControlVentaMatrix === 'function') renderControlVentaMatrix();
     showAlert('alert-descargas', 'Distribucion Tiendona guardada correctamente.', 'ok');
     return false;
   };
@@ -17273,7 +17326,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.guardarDistribucionTiendona = window.guardarDistribucionTiendonaFija;
 
   window.repararSalidasTiendona = function(){
-    if (typeof registrarMovimientoInventario !== 'function') return;
+    if (typeof window.registrarMovimientoDistribucionSeguro !== 'function') return;
     var data = JSON.parse(localStorage.getItem('descargas-data') || '[]');
     var inv = JSON.parse(localStorage.getItem('inventario-data') || '[]');
     var existentes = {};
@@ -17292,8 +17345,9 @@ document.addEventListener('DOMContentLoaded', function() {
       var cantidades = row.unidades || (typeof window.expandirDistribucionPaquetes === 'function'
         ? window.expandirDistribucionPaquetes(row)
         : row);
-      var result = registrarMovimientoInventario({
+      var result = window.registrarMovimientoDistribucionSeguro({
         id: salidaId,
+        origenId: row.id,
         fecha: row.fecha || (typeof fechaHoy === 'function' ? fechaHoy() : fechaISOActualSistema()),
         ubicacion: source,
         lugar: 'Tiendona',
