@@ -253,6 +253,10 @@
   .online-indicator.online::before{background:#22c55e;}
   .online-indicator.offline::before{background:#ef4444;}
   .online-indicator.syncing::before{background:#3b82f6;}
+  .hbtn-sync{
+    background:#16a34a;
+    color:#fff;
+  }
   .hbtn-chat{
     background:#0f766e;
   }
@@ -969,6 +973,7 @@
   </div>
   <div class="header-actions">
     <span id="online-indicator" class="online-indicator syncing" title="Estado de conexion">Sincronizando...</span>
+    <button class="hbtn hbtn-sync" onclick="sincronizarAhoraManual()" title="Sincronizar datos ahora">Sincronizar</button>
     <button class="hbtn hbtn-chat" onclick="toggleChatPanel()" title="Usuarios conectados y chat">Chat <span id="online-users-count">0</span></button>
     <button class="hbtn hbtn-settings" onclick="openSettings()">⚙️ Ajustes</button>
   </div>
@@ -1873,7 +1878,6 @@
           <option value="usulutan">CDA Usulután</option>
         </select>
         <button class="btn btn-sm btn-success" onclick="guardarCuadreCDA()">Guardar Cuadre</button>
-        <button class="btn btn-sm btn-secondary" onclick="renderCuadreCDA()">Actualizar</button>
       </div>
     </div>
     <div class="card-body">
@@ -2091,7 +2095,6 @@
         <input type="date" id="cuadre-bodega-fecha" onchange="renderCuadreBodegas()" style="max-width:160px;">
         <button type="button" class="btn btn-sm btn-primary" onclick="imprimirTablasPorTitulo('Cuadre de Bodegas', ['#tabla-cuadre-bodegas'])">Imprimir</button>
         <button class="btn btn-sm btn-success" onclick="guardarCuadreBodegas()">Guardar Cuadre</button>
-        <button class="btn btn-sm btn-secondary" onclick="renderCuadreBodegas()">Actualizar</button>
         <button class="btn btn-sm btn-secondary" onclick="toggleInventarioManual()">Ir al Registro</button>
       </div>
     </div>
@@ -2711,13 +2714,11 @@
       <div class="sp-section">
         <div class="sp-label">Conexion en Linea</div>
         <div class="sp-btn-row">
-          <button class="sp-btn" onclick="probarSupabase()">Probar Supabase</button>
-          <button class="sp-btn" onclick="sincronizarPendientesSupabase()">Sincronizar Pendientes</button>
-          <button class="sp-btn" onclick="revisarSincronizacionVentas()">Revisar Ventas</button>
+          <button class="sp-btn" onclick="sincronizarAhoraManual()">Sincronizar ahora</button>
           <button class="sp-btn sp-btn-guide" onclick="openProgramGuide()">Guia</button>
         </div>
         <div class="sp-sub" id="supabase-status" style="margin-top:8px;">Proyecto conectado: hfijlpjeqagxyvgirkwk.supabase.co</div>
-        <div class="sp-sub" id="sync-check-status" style="margin-top:8px;">Sin revision reciente.</div>
+        <div class="sp-sub" id="sync-check-status" style="margin-top:8px;">La sincronizacion corre automaticamente al abrir, al volver a la pestaña, al reconectar internet y cada 10 segundos.</div>
       </div>
 
       <div class="sp-section">
@@ -2797,7 +2798,7 @@
         <li><strong>Aprobacion:</strong> al aprobar, el reporte pasa a la tabla de ventas y se actualiza el historial del dia.</li>
         <li><strong>Banco y remesas:</strong> confirma que el dinero enviado coincida con ventas menos gastos. Usa Reporte Banco para controlar remesas.</li>
         <li><strong>Impresion e historial:</strong> imprime desde los historiales cuando necesites respaldo fisico o PDF. Cada dia genera un reporte nuevo.</li>
-        <li><strong>Sincronizacion:</strong> usa Probar Supabase, Sincronizar Pendientes y Revisar Ventas si algun dato no aparece en linea.</li>
+        <li><strong>Sincronizacion:</strong> el sistema sincroniza automaticamente. Usa el boton Sincronizar solo si necesitas forzar una revision inmediata.</li>
         <li><strong>Respaldo:</strong> antes de borrar datos o hacer pruebas grandes, crea respaldo desde Ajustes.</li>
       </ol>
       <blockquote>Orden recomendado: datos configurados, inventario, distribucion, reporte del vendedor, revision, aprobacion, banco e impresion.</blockquote>
@@ -17607,8 +17608,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   window.sincronizarTablaSupabase = async function(config){
-    var uploaded = await uploadLocalTable(config);
-    var downloaded = await downloadRemoteTable(config);
+    var downloaded = 0;
+    var uploaded = 0;
+
+    if (config.pruneMissing) {
+      downloaded = await downloadRemoteTable(config);
+      uploaded = await uploadLocalTable(config);
+    } else {
+      uploaded = await uploadLocalTable(config);
+      downloaded = await downloadRemoteTable(config);
+    }
+
     return { uploaded: uploaded || 0, downloaded: downloaded || 0 };
   };
 
@@ -17758,27 +17768,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.cargarHistorial = window.cargarVentasDesdeSupabase;
 
+  function ejecutarSincronizacionAutomatica(label){
+    if (!navigator.onLine) {
+      setOnlineIndicator('offline', 'Sin conexion');
+      currentOnlineStatus('Sin conexion. Esperando internet para sincronizar.');
+      return Promise.resolve({ ok: false, skipped: true, reason: 'offline' });
+    }
+    if (!window.haySesionSupabase || !window.haySesionSupabase()) {
+      setOnlineIndicator('syncing', 'Inicia sesion');
+      return Promise.resolve({ ok: false, skipped: true, reason: 'auth-required' });
+    }
+    if (window.supabaseSyncRunning) {
+      return Promise.resolve({ ok: true, skipped: true, reason: 'running' });
+    }
+    if (typeof window.sincronizarPendientesSupabase !== 'function') {
+      return Promise.resolve({ ok: false, skipped: true, reason: 'sync-missing' });
+    }
+    setOnlineIndicator('syncing', label || 'Sincronizando...');
+    return window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true });
+  }
+
+  window.sincronizarAhoraManual = function(){
+    ejecutarSincronizacionAutomatica('Sincronizando...').then(function(result){
+      if (result && result.skipped && result.reason === 'auth-required' && typeof showToast === 'function') {
+        showToast('Inicia sesion para sincronizar.');
+      } else if (result && result.ok && typeof showToast === 'function') {
+        showToast('Datos sincronizados.');
+      }
+    }).catch(function(error){
+      console.warn('Sincronizacion manual pendiente:', error);
+      currentOnlineStatus('Sincronizacion pendiente: ' + error.message);
+      if (typeof showToast === 'function') showToast('Sincronizacion pendiente.');
+    });
+  };
+
   function syncSoon(){
     if (!window.haySesionSupabase || !window.haySesionSupabase()) return;
     setTimeout(function(){
-      if (typeof window.cargarVentasDesdeSupabase === 'function') {
-        window.cargarVentasDesdeSupabase().catch(function(error){
-          console.warn('No se pudo sincronizar y cargar ventas desde Supabase:', error);
-          if (typeof window.sincronizarPendientesSupabase === 'function') {
-            window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-              console.warn('No se pudo sincronizar con Supabase:', error);
-              currentOnlineStatus('Guardado local. Supabase pendiente: ' + error.message);
-              if (typeof showToast === 'function') showToast('Guardado local. Supabase pendiente.');
-            });
-          }
-        });
-      } else {
-        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-          console.warn('No se pudo sincronizar con Supabase:', error);
-          currentOnlineStatus('Guardado local. Supabase pendiente: ' + error.message);
-          if (typeof showToast === 'function') showToast('Guardado local. Supabase pendiente.');
-        });
-      }
+      ejecutarSincronizacionAutomatica('Sincronizando...').catch(function(error){
+        console.warn('No se pudo sincronizar con Supabase:', error);
+        currentOnlineStatus('Guardado local. Supabase pendiente: ' + error.message);
+        if (typeof showToast === 'function') showToast('Guardado local. Supabase pendiente.');
+      });
     }, 300);
   }
 
@@ -17829,63 +17860,39 @@ document.addEventListener('DOMContentLoaded', function() {
     setOnlineIndicator(navigator.onLine ? 'syncing' : 'offline', navigator.onLine ? 'Sincronizando...' : 'Sin conexion');
     if (typeof actualizarPeriodoResumenVentas === 'function') actualizarPeriodoResumenVentas();
     setTimeout(function(){
-      if (!window.haySesionSupabase || !window.haySesionSupabase()) {
-        setOnlineIndicator(navigator.onLine ? 'syncing' : 'offline', navigator.onLine ? 'Inicia sesion' : 'Sin conexion');
-        return;
-      }
-      if (typeof window.cargarVentasDesdeSupabase === 'function') {
-        window.cargarVentasDesdeSupabase().catch(function(error){
-          console.warn('Sincronizacion inicial pendiente:', error);
-        });
-      } else {
-        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-          console.warn('Sincronizacion inicial pendiente:', error);
-        });
-      }
+      ejecutarSincronizacionAutomatica('Sincronizando...').catch(function(error){
+        console.warn('Sincronizacion inicial pendiente:', error);
+      });
     }, 1200);
 
     if (window.excomercafeSyncTimer) clearInterval(window.excomercafeSyncTimer);
     window.excomercafeSyncTimer = setInterval(function(){
-      if (!navigator.onLine) {
-        setOnlineIndicator('offline', 'Sin conexion');
-        currentOnlineStatus('Sin conexion. Esperando internet para sincronizar.');
-        return;
-      }
-      if (!window.haySesionSupabase || !window.haySesionSupabase()) {
-        setOnlineIndicator('syncing', 'Inicia sesion');
-        return;
-      }
-      if (typeof window.cargarVentasDesdeSupabase === 'function') {
-        window.cargarVentasDesdeSupabase().catch(function(error){
-          console.warn('Sincronizacion automatica pendiente:', error);
-        });
-      } else {
-        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-          console.warn('Sincronizacion automatica pendiente:', error);
-        });
-      }
+      ejecutarSincronizacionAutomatica('Sincronizando...').catch(function(error){
+        console.warn('Sincronizacion automatica pendiente:', error);
+      });
     }, 10000);
 
     window.addEventListener('online', function(){
-      setOnlineIndicator('syncing', 'Sincronizando...');
-      if (!window.haySesionSupabase || !window.haySesionSupabase()) {
-        setOnlineIndicator('syncing', 'Inicia sesion');
-        return;
-      }
-      if (typeof window.cargarVentasDesdeSupabase === 'function') {
-        window.cargarVentasDesdeSupabase().catch(function(error){
-          console.warn('Sincronizacion al reconectar pendiente:', error);
-        });
-      } else {
-        window.sincronizarPendientesSupabase({ noInterrupt: true, silent: true }).catch(function(error){
-          console.warn('Sincronizacion al reconectar pendiente:', error);
-        });
-      }
+      ejecutarSincronizacionAutomatica('Sincronizando...').catch(function(error){
+        console.warn('Sincronizacion al reconectar pendiente:', error);
+      });
     });
 
     window.addEventListener('offline', function(){
       setOnlineIndicator('offline', 'Sin conexion');
       currentOnlineStatus('Sin conexion. Los datos se guardaran localmente.');
+    });
+    window.addEventListener('focus', function(){
+      ejecutarSincronizacionAutomatica('Sincronizando...').catch(function(error){
+        console.warn('Sincronizacion al volver a la ventana pendiente:', error);
+      });
+    });
+    document.addEventListener('visibilitychange', function(){
+      if (!document.hidden) {
+        ejecutarSincronizacionAutomatica('Sincronizando...').catch(function(error){
+          console.warn('Sincronizacion al volver a la pestana pendiente:', error);
+        });
+      }
     });
     document.addEventListener('focusout', function(){
       setTimeout(aplicarRefreshPendiente, 250);
