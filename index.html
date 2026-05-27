@@ -2046,11 +2046,6 @@
   <div class="card" id="inventario-registro-card">
     <div class="card-header">
       <span>📋 Registro de Inventario</span>
-      <div class="flex gap-8 items-center flex-wrap">
-        <button class="btn btn-sm btn-success" onclick="event.preventDefault(); guardarInventario(); return false;">✅ Guardar</button>
-        <button class="btn btn-sm btn-secondary" onclick="limpiarFormularioInventario()">🔄 Limpiar</button>
-        <button class="btn btn-sm btn-accent" onclick="exportarInventarioExcel()">📥 Exportar Excel</button>
-      </div>
     </div>
     <div class="card-body">
       <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
@@ -2098,11 +2093,9 @@
         </div>
       </div>
       
-      <div class="form-row" style="margin-top:12px;">
-        <div class="fg">
-          <label>Observaciones</label>
-          <textarea id="inventario-observaciones" rows="3" placeholder="Notas sobre el inventario..." style="width:100%;resize:vertical;"></textarea>
-        </div>
+      <textarea id="inventario-observaciones" style="display:none;"></textarea>
+      <div class="inventory-save-row">
+        <button class="btn btn-sm btn-success" onclick="event.preventDefault(); guardarInventario(); return false;">✅ Guardar</button>
       </div>
       
       <div id="alert-inventario" class="alert alert-ok"></div>

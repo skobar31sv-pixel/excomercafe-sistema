@@ -1329,6 +1329,12 @@ datalist {
   font-weight: 800;
 }
 
+.inventory-save-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
 .tbl thead th,
 table thead th {
   letter-spacing: 0.1px;
@@ -1469,6 +1475,12 @@ body {
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.inventory-save-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }
 
 @media (min-width: 901px) {
