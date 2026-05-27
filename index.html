@@ -423,26 +423,34 @@
   .radio-supra-player{
     display:flex;
     align-items:center;
-    gap:7px;
+    gap:5px;
     min-height:34px;
-    padding:5px 8px;
+    width:100%;
+    padding:5px 6px;
     border:1px solid #bfdbfe;
     border-radius:9px;
     background:#fff;
     color:#0f2f4d;
     font-size:.75rem;
     font-weight:900;
+    overflow:hidden;
+  }
+  .radio-player > span{
+    flex:0 0 auto;
+    font-size:.72rem;
   }
   .radio-player select{
-    min-height:28px;
-    max-width:190px;
+    min-height:26px;
+    min-width:0;
+    width:110px;
+    flex:1 1 110px;
     border:1px solid #bfdbfe;
     border-radius:7px;
     background:#f8fbff;
     color:#0f2f4d;
-    font-size:.74rem;
-    font-weight:900;
-    padding:4px 7px;
+    font-size:.7rem;
+    font-weight:850;
+    padding:3px 5px;
   }
   .radio-player button,
   .radio-supra-player button{
@@ -450,16 +458,29 @@
     border-radius:7px;
     background:#17456b;
     color:#fff;
-    min-height:28px;
-    padding:4px 9px;
+    min-height:26px;
+    min-width:28px;
+    padding:3px 6px;
     font-weight:900;
     cursor:pointer;
+    line-height:1;
+    flex:0 0 28px;
   }
   .radio-player a,
   .radio-supra-player a{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:28px;
+    min-height:26px;
+    border-radius:7px;
+    border:1px solid #bfdbfe;
+    background:#f8fbff;
     color:#17456b;
     font-weight:900;
     text-decoration:none;
+    line-height:1;
+    flex:0 0 28px;
   }
   .chat-messages{
     flex:1 1 auto;
@@ -2679,9 +2700,9 @@
           <div style="font-weight:800;color:var(--text-primary);">Radios</div>
           <div class="radio-player">
             <span>Radio</span>
-            <select id="radio-station-select" onchange="cambiarRadioDock()"></select>
-            <button type="button" id="radio-play-btn" onclick="toggleRadioDock()">Play</button>
-            <a id="radio-open-link" href="https://radios.com.sv/" target="_blank" rel="noopener">Abrir</a>
+            <select id="radio-station-select" onchange="cambiarRadioDock()" title="Seleccionar radio"></select>
+            <button type="button" id="radio-play-btn" onclick="toggleRadioDock()" title="Reproducir o pausar">▶</button>
+            <a id="radio-open-link" href="https://radios.com.sv/" target="_blank" rel="noopener" title="Abrir radio">↗</a>
             <audio id="radio-dock-audio" preload="none"></audio>
           </div>
         </div>
@@ -2854,11 +2875,12 @@ function usuarioPuedeVerRadio(session){
 
 function actualizarRadioSupraVisible(session){
   var visible = usuarioPuedeVerRadio(session || window.authSession);
+  visible = true;
   if(!visible) {
     var audio = document.getElementById('radio-dock-audio');
     var btn = document.getElementById('radio-play-btn');
     if(audio) audio.pause();
-    if(btn) btn.textContent = 'Play';
+    if(btn) btn.textContent = '▶';
     localStorage.setItem('radio-dock-state', 'paused');
   }
 }
@@ -3687,12 +3709,12 @@ function inicializarRadioDock(){
   if(audio && btn) {
     audio.addEventListener('pause', function(){
       if(!audio.ended) {
-        btn.textContent = 'Play';
+        btn.textContent = '▶';
         localStorage.setItem('radio-dock-state', 'paused');
       }
     });
     audio.addEventListener('play', function(){
-      btn.textContent = 'Pausa';
+      btn.textContent = '⏸';
       localStorage.setItem('radio-dock-state', 'playing');
     });
     if(localStorage.getItem('radio-dock-state') === 'playing') {
@@ -3712,7 +3734,7 @@ window.cambiarRadioDock = function(){
     audio.removeAttribute('src');
     audio.load();
   }
-  if(btn) btn.textContent = 'Play';
+  if(btn) btn.textContent = '▶';
   if(link) link.href = (station && station.page) || 'https://radios.com.sv/';
   localStorage.setItem('radio-dock-state', 'paused');
 };
@@ -3730,10 +3752,10 @@ function reproducirRadioDock(silent){
   }
   if(!audio.src) audio.src = station.url;
   return audio.play().then(function(){
-    btn.textContent = 'Pausa';
+    btn.textContent = '⏸';
     localStorage.setItem('radio-dock-state', 'playing');
   }).catch(function(){
-    btn.textContent = 'Play';
+    btn.textContent = '▶';
     localStorage.setItem('radio-dock-state', 'paused');
     if(!silent && typeof showToast === 'function') showToast('La radio no se pudo reproducir aqui. Usa Abrir.');
   });
@@ -3747,7 +3769,7 @@ window.toggleRadioDock = function(){
     reproducirRadioDock(false);
   } else {
     audio.pause();
-    btn.textContent = 'Play';
+    btn.textContent = '▶';
     localStorage.setItem('radio-dock-state', 'paused');
   }
 };
