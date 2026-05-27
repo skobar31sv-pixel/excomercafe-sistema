@@ -1303,6 +1303,24 @@ datalist {
   background: #ffffff;
 }
 
+.warehouse-balance-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #b9d8f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.warehouse-balance-actions > span {
+  font-weight: 900;
+  color: var(--text);
+}
+
 .tbl thead th,
 table thead th {
   letter-spacing: 0.1px;
@@ -1417,6 +1435,24 @@ body {
   border-radius: initial;
   border: initial;
   background: initial;
+}
+
+.warehouse-balance-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--bg-secondary), var(--card-bg));
+}
+
+.warehouse-balance-actions > span {
+  font-weight: 900;
+  color: var(--text-primary);
 }
 
 @media (min-width: 901px) {
