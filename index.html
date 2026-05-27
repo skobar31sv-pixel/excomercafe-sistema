@@ -3422,16 +3422,16 @@ function revisionProductosHtml(payload){
   var danado = payload.danado || {};
   var dinero = payload.dinero_productos || {};
   return '<div class="review-detail"><table><thead><tr>'
-    + '<th>Producto</th><th>Anterior</th><th>Nuevo</th><th>Final</th><th>Dañado</th><th>Vendido</th><th>Dinero</th>'
+    + '<th>Producto</th><th>Anterior</th><th>Nuevo</th><th>Dañado</th><th>Vendido</th><th>Final</th><th>Dinero</th>'
     + '</tr></thead><tbody>'
     + productos.map(function(item){
       var key = item[0];
       return '<tr><td>' + item[1] + '</td>'
         + '<td>' + (Number(inicio[key] || 0) || 0) + '</td>'
         + '<td>' + (Number(nuevo[key] || 0) || 0) + '</td>'
-        + '<td>' + (Number(final[key] || 0) || 0) + '</td>'
         + '<td>' + (Number(danado[key] || 0) || 0) + '</td>'
         + '<td>' + (Number(unidades[key] || 0) || 0) + '</td>'
+        + '<td>' + (Number(final[key] || 0) || 0) + '</td>'
         + '<td>' + revisionMoney(dinero[key] || 0) + '</td></tr>';
     }).join('')
     + '</tbody></table></div>';
