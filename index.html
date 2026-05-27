@@ -14658,12 +14658,20 @@ document.addEventListener('DOMContentLoaded', function() {
     harina: 'Harina'
   };
   var PRODUCT_FACTORS_DIST = {
-    arroz: 1,
-    precocido: 1,
-    frijol1: 1,
-    frijol4: 1,
-    aceite: 1,
-    harina: 1
+    arroz: 80,
+    precocido: 80,
+    frijol1: 80,
+    frijol4: 80,
+    aceite: 20,
+    harina: 25
+  };
+  var PRODUCT_PACKAGE_LABELS_DIST = {
+    arroz: 'sacos',
+    precocido: 'sacos',
+    frijol1: 'sacos',
+    frijol4: 'sacos',
+    aceite: 'cajas',
+    harina: 'cajas'
   };
 
   var SOURCE_LOCATIONS_DIST = {
@@ -14747,7 +14755,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function getMatrixTotals(tipo){
     return readMatrixRows(tipo).reduce(function(acc, row){
-      return addTotals(acc, expandirDistribucionPaquetes(row), 1);
+      return addTotals(acc, row, 1);
     }, emptyTotals());
   }
 
@@ -14774,7 +14782,8 @@ document.addEventListener('DOMContentLoaded', function() {
     cont.innerHTML = '<div class="resumen-grid resumen-stock-live">' +
       PRODUCT_KEYS_DIST.map(function(key){
         var value = totals[key];
-        return '<div class="' + stockClass(value) + '"><strong>' + PRODUCT_LABELS_DIST[key] + '</strong><br><span>' + value + '</span></div>';
+        var unidades = value * (PRODUCT_FACTORS_DIST[key] || 1);
+        return '<div class="' + stockClass(value) + '"><strong>' + PRODUCT_LABELS_DIST[key] + '</strong><br><span>' + value + ' ' + PRODUCT_PACKAGE_LABELS_DIST[key] + '</span><small>' + unidades + ' lb/unid.</small></div>';
       }).join('') +
       '</div>';
   }
@@ -14813,12 +14822,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var prod = input.getAttribute('data-prod') || '';
     if (PRODUCT_KEYS_DIST.indexOf(prod) < 0) return;
 
-    var factor = PRODUCT_FACTORS_DIST[prod] || 1;
     var disponible = getInventoryTotals(SOURCE_LOCATIONS_DIST[tipo])[prod] || 0;
     var totalActual = getMatrixTotals(tipo)[prod] || 0;
     var valorActual = normalizeNumber(input.value);
-    var otrosPedidos = Math.max(0, totalActual - (valorActual * factor));
-    var maxCantidad = Math.max(0, Math.floor((disponible - otrosPedidos) / factor));
+    var otrosPedidos = Math.max(0, totalActual - valorActual);
+    var maxCantidad = Math.max(0, Math.floor(disponible - otrosPedidos));
 
     input.max = String(maxCantidad);
     if (valorActual > maxCantidad) {
@@ -14973,7 +14981,7 @@ document.addEventListener('DOMContentLoaded', function() {
         observaciones: observaciones,
         timestamp: new Date().toISOString()
       });
-      saveSourceSalida(unidades, 'TIENDONA', id, fecha);
+      saveSourceSalida(row, 'TIENDONA', id, fecha);
       saveEntradaAgromercado(unidades, id, fecha, 'Tiendona');
     });
 
@@ -15031,7 +15039,7 @@ document.addEventListener('DOMContentLoaded', function() {
         observaciones: observaciones,
         timestamp: new Date().toISOString()
       });
-      saveSourceSalida(unidades, 'CDA', id, fecha);
+      saveSourceSalida(row, 'CDA', id, fecha);
       saveEntradaAgromercado(unidades, id, fecha, 'CDA');
     });
 
@@ -17284,12 +17292,12 @@ document.addEventListener('DOMContentLoaded', function() {
           lugar: 'Tiendona',
           tipo: 'salida-distribucion',
           referencia: 'Salida Tiendona a ' + row.destino,
-          arroz: -unidades.arroz,
-          precocido: -unidades.precocido,
-          frijol1: -unidades.frijol1,
-          frijol4: -unidades.frijol4,
-          aceite: -unidades.aceite,
-          harina: -unidades.harina
+          arroz: -row.arroz,
+          precocido: -row.precocido,
+          frijol1: -row.frijol1,
+          frijol4: -row.frijol4,
+          aceite: -row.aceite,
+          harina: -row.harina
         });
         window.registrarMovimientoDistribucionSeguro({
           id: 'entrada-' + id,
@@ -17342,9 +17350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var opciones = obtenerUbicacionesInventarioParaDestino(row.agromercado, 'TIENDONA');
         if (opciones && opciones[0] && opciones[0].value) source = opciones[0].value;
       }
-      var cantidades = row.unidades || (typeof window.expandirDistribucionPaquetes === 'function'
-        ? window.expandirDistribucionPaquetes(row)
-        : row);
+      var cantidades = row;
       var result = window.registrarMovimientoDistribucionSeguro({
         id: salidaId,
         origenId: row.id,

@@ -1321,6 +1321,14 @@ datalist {
   color: var(--text);
 }
 
+.resumen-stock-live small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .tbl thead th,
 table thead th {
   letter-spacing: 0.1px;
@@ -1453,6 +1461,14 @@ body {
 .warehouse-balance-actions > span {
   font-weight: 900;
   color: var(--text-primary);
+}
+
+.resumen-stock-live small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 @media (min-width: 901px) {
