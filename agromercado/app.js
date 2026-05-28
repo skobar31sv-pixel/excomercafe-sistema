@@ -638,7 +638,11 @@ async function revisarBloqueoPendiente(agromercado, fecha){
   try{
     var existente = await buscarReportePorFecha(agromercado, fecha);
     if(existente){
-      guardarPendienteLocal(agromercado, fecha);
+      if(existente.tipo === 'pendiente' || String(existente.estado || '').toLowerCase() === 'pendiente') {
+        guardarPendienteLocal(agromercado, fecha);
+      } else if(local) {
+        limpiarPendienteLocal();
+      }
       setHojaBloqueada(true, existente);
       return;
     }else{

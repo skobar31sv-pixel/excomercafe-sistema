@@ -3201,6 +3201,45 @@ window.eliminarSupabasePorLocalId = async function(table, localIdValue){
   }
 };
 
+window.eliminarVentaAgromercadoRemota = async function(record){
+  if (!window.supabaseRequest || !record) return false;
+  var deleted = false;
+  var ids = [
+    record.local_id,
+    record.id,
+    record.localId,
+    record.ts,
+    record.timestamp
+  ].filter(function(value, index, arr){
+    value = String(value || '').trim();
+    return value && arr.map(function(v){ return String(v || '').trim(); }).indexOf(value) === index;
+  });
+
+  async function tryDelete(path){
+    try {
+      await window.supabaseRequest(path, { method:'DELETE', prefer:'return=minimal' });
+      deleted = true;
+    } catch(error) {
+      console.warn('No se pudo borrar venta remota:', path, error);
+    }
+  }
+
+  for (var i = 0; i < ids.length; i++) {
+    await tryDelete('/rest/v1/ventas_agromercado?local_id=eq.' + encodeURIComponent(ids[i]));
+    await tryDelete('/rest/v1/ventas_agromercado?id=eq.' + encodeURIComponent(ids[i]));
+  }
+
+  var fecha = record.fecha ? String(record.fecha).slice(0, 10) : '';
+  var agro = record.agromercado || record.nombre || '';
+  if (fecha && agro) {
+    var filtro = 'fecha=eq.' + encodeURIComponent(fecha) + '&agromercado=eq.' + encodeURIComponent(agro);
+    await tryDelete('/rest/v1/ventas_agromercado?' + filtro);
+    await tryDelete('/rest/v1/ventas_agromercado_pendientes?' + filtro);
+  }
+
+  return deleted;
+};
+
 window.probarSupabase = async function(){
   var status = document.getElementById('supabase-status');
   if (status) status.textContent = 'Probando conexion...';
@@ -5706,7 +5745,7 @@ function revertirInventarioPorVenta(registro){
   }
 }
 
-window.eliminarRegistro = function(index){
+window.eliminarRegistro = async function(index){
   if(!confirm('¿Seguro que deseas eliminar este registro?')) return;
   
   var hist = JSON.parse(localStorage.getItem('exc_agro_hist')||'[]');
@@ -5717,13 +5756,13 @@ window.eliminarRegistro = function(index){
   hist.splice(index, 1);
   localStorage.setItem('exc_agro_hist', JSON.stringify(hist));
   var localIdValue = registroEliminado.local_id || registroEliminado.id || registroEliminado.ts || registroEliminado.timestamp;
-  if (localIdValue) {
-    setTimeout(function(){
-      eliminarSupabasePorLocalId('ventas_agromercado', localIdValue).catch(function(error){
-        console.warn('No se pudo borrar en Supabase:', error);
-      });
-    }, 0);
-  } else {
+  var borradoRemoto = false;
+  if (typeof window.eliminarVentaAgromercadoRemota === 'function') {
+    borradoRemoto = await window.eliminarVentaAgromercadoRemota(registroEliminado);
+  } else if (localIdValue) {
+    borradoRemoto = await eliminarSupabasePorLocalId('ventas_agromercado', localIdValue);
+  }
+  if (!localIdValue && !borradoRemoto) {
     if (typeof showToast === 'function') {
       showToast('⚠️ Registro eliminado localmente. No se encontró ID para borrar en Supabase.');
     }
@@ -5735,7 +5774,7 @@ window.eliminarRegistro = function(index){
   if(typeof actualizarEstadoReportesAgromercado === 'function') actualizarEstadoReportesAgromercado();
   renderBancos();
   
-  showToast('🗑️ Registro eliminado');
+  showToast(borradoRemoto ? '🗑️ Registro eliminado local y en línea' : '🗑️ Registro eliminado localmente. Revisa conexión para borrar en línea.');
 };
 
 window.limpiarHistorial = function(){
@@ -16699,7 +16738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  window.borrarRegistroBanco = function(index){
+  window.borrarRegistroBanco = async function(index){
     var hist = getHist();
     var registro = hist[index];
     if(!registro) return;
@@ -16707,12 +16746,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if(typeof revertirInventarioPorVenta === 'function') revertirInventarioPorVenta(registro);
     hist.splice(index, 1);
     saveHist(hist);
-    if(registro.id && typeof eliminarSupabasePorLocalId === 'function') eliminarSupabasePorLocalId('ventas_agromercado', registro.id);
+    var borradoRemoto = false;
+    if(typeof window.eliminarVentaAgromercadoRemota === 'function') {
+      borradoRemoto = await window.eliminarVentaAgromercadoRemota(registro);
+    } else if(registro.id && typeof eliminarSupabasePorLocalId === 'function') {
+      borradoRemoto = await eliminarSupabasePorLocalId('ventas_agromercado', registro.id);
+    }
     if(typeof refrescarInventarioEnTiempoReal === 'function') refrescarInventarioEnTiempoReal();
     if(typeof renderBancos === 'function') renderBancos();
     if(typeof renderHistorial === 'function') renderHistorial();
     if(typeof renderResumenVentasPeriodo === 'function') renderResumenVentasPeriodo();
-    if(typeof showToast === 'function') showToast('Registro borrado.');
+    if(typeof showToast === 'function') showToast(borradoRemoto ? 'Registro borrado local y en linea.' : 'Registro borrado localmente. Revisa conexion para borrar en linea.');
   };
 
   window.limpiarFiltrosBancos = function(){
