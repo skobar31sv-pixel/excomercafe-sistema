@@ -16108,7 +16108,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function setRowNumber(row, prodKey, field, value){
     var input = row.querySelector('input[data-prod="' + prodKey + '"][data-field="' + field + '"]');
-    if (input) input.value = Number(value || 0) || 0;
+    if (input) {
+      input.value = Number(value || 0) || 0;
+      aplicarColorVentaCell(input);
+    }
+  }
+
+  function aplicarColorVentaCell(input){
+    if(!input) return;
+    var field = input.getAttribute('data-field') || '';
+    var value = Number(input.value || 0) || 0;
+    input.classList.remove('venta-cell-green', 'venta-cell-yellow', 'venta-cell-red');
+    if ((field === 'inicio' || field === 'inventario') && value > 0) {
+      input.classList.add('venta-cell-green');
+    } else if (field === 'ventas' && value > 0) {
+      input.classList.add('venta-cell-yellow');
+    } else if ((field === 'faltante' || field === 'danadas') && value > 0) {
+      input.classList.add('venta-cell-red');
+    } else if (field === 'diferencia' && value > 0) {
+      input.classList.add('venta-cell-red');
+    }
+  }
+
+  function aplicarColoresVentaMatrix(){
+    document.querySelectorAll('#tbody-control-venta-fija input.venta-cell').forEach(aplicarColorVentaCell);
   }
 
   function updateVentaMatrixTotals(){
@@ -16137,8 +16160,8 @@ document.addEventListener('DOMContentLoaded', function() {
         totals[p.key].ventas += ventas;
         totals[p.key].faltante += faltante;
         totals[p.key].danadas += danadas;
-        totals[p.key].inventario += inventario;
-        totals[p.key].diferencia += diferencia;
+      totals[p.key].inventario += inventario;
+      totals[p.key].diferencia += diferencia;
       });
       var totalInput = row.querySelector('.venta-row-total');
       if (totalInput) totalInput.value = rowTotal.toFixed(2);
@@ -16159,6 +16182,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setVal('campo-ventas', money(totals.dinero));
     setVal('campo-remesa', money(Math.max(0, totals.dinero - (Number(document.getElementById('campo-gastos')?.value || 0) || 0))));
     setVal('campo-total-esperado', money(totals.dinero));
+    aplicarColoresVentaMatrix();
   }
 
   function readVentaRows(includeAll){

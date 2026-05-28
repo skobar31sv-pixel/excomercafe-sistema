@@ -1385,6 +1385,27 @@ datalist {
   color: #1d4ed8;
 }
 
+.venta-cell.venta-cell-green {
+  background: #ecfdf5 !important;
+  border-color: #22c55e !important;
+  color: #065f46 !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12) inset;
+}
+
+.venta-cell.venta-cell-yellow {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.14) inset;
+}
+
+.venta-cell.venta-cell-red {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12) inset;
+}
+
 .inventory-save-row,
 .distribution-save-row {
   display: flex;
