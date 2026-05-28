@@ -7950,6 +7950,7 @@ window.guardarInventario = function(){
     destino: destino,
     ubicacion: ubicacion,
     lugarEspecifico: lugarEspecifico,
+    tipo: 'registro-inventario',
     arroz: arroz,
     precocido: precocido,
     frijol1: frijol1,
@@ -8049,14 +8050,18 @@ function claseTotalInventario(total){
   return '';
 }
 
-function inventarioVisibleEnHistorial(inv){
+function inventarioEsRegistroManual(inv){
   if (!inv) return false;
-  if (typeof window.inventarioVisibleUsuario === 'function') return window.inventarioVisibleUsuario(inv);
   var tipo = String(inv.tipo || '').toLowerCase();
-  return ['salida-distribucion', 'entrada-distribucion'].indexOf(tipo) < 0;
+  if (tipo) return tipo === 'registro-inventario' || tipo === 'inventario-manual';
+  return !inv.origenId && !inv.referencia && !inv.origen;
 }
 
-window.inventarioVisibleUsuario = window.inventarioVisibleUsuario || inventarioVisibleEnHistorial;
+function inventarioVisibleEnHistorial(inv){
+  return inventarioEsRegistroManual(inv);
+}
+
+window.inventarioVisibleUsuario = inventarioEsRegistroManual;
 
 function limpiarMovimientosAutomaticosInventarioVisible(){
   return false;
@@ -8300,31 +8305,26 @@ window.limpiarHistorialInventario = async function(){
   try { localActual = JSON.parse(localStorage.getItem('inventario-data') || '[]'); } catch(error) { localActual = []; }
   var idsMap = {};
   (inventarioData || []).concat(localActual || []).forEach(function(item){
+    if (!inventarioVisibleEnHistorial(item)) return;
     var id = item && (item.local_id || item.id);
     if (id) idsMap[String(id)] = true;
   });
   var ids = Object.keys(idsMap);
-  inventarioData = [];
-  localStorage.setItem('inventario-data', '[]');
+  inventarioData = (localActual || []).filter(function(item){
+    return !inventarioVisibleEnHistorial(item);
+  });
+  localStorage.setItem('inventario-data', JSON.stringify(inventarioData));
   localStorage.setItem('inventario-clear-before', corteInventario);
   ['inventario-registros', 'inventario-historial', 'exc_inventario_hist'].forEach(function(key){
     localStorage.removeItem(key);
   });
 
   if (window.supabaseRequest && window.haySesionSupabase && window.haySesionSupabase()) {
-    try {
-      await window.supabaseRequest('/rest/v1/inventario_movimientos?local_id=not.is.null', {
-        method: 'DELETE',
-        prefer: 'return=minimal'
+    await Promise.all(ids.map(function(id){
+      return eliminarSupabasePorLocalId('inventario_movimientos', id).catch(function(deleteError){
+        console.warn('No se pudo borrar registro manual de inventario en Supabase:', deleteError);
       });
-    } catch(error) {
-      console.warn('No se pudo borrar inventario remoto completo, se intentara por registro:', error);
-      await Promise.all(ids.map(function(id){
-        return eliminarSupabasePorLocalId('inventario_movimientos', id).catch(function(deleteError){
-          console.warn('No se pudo borrar movimiento de inventario en Supabase:', deleteError);
-        });
-      }));
-    }
+    }));
   }
 
   if (typeof window.supabaseRlsBlockedTables === 'object') {
