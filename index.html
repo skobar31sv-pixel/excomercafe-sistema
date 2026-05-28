@@ -15372,6 +15372,64 @@ document.addEventListener('DOMContentLoaded', function() {
     return key === 'fr4' ? (qty / 4) * productPrice(key) : qty * productPrice(key);
   }
 
+  function ventaPayload(row){
+    if(!row) return {};
+    if(row.payload && typeof row.payload === 'object') return row.payload;
+    if(row.payload && typeof row.payload === 'string') {
+      try { return JSON.parse(row.payload) || {}; } catch(e) {}
+    }
+    return row || {};
+  }
+
+  function ventaMapValue(map, prod){
+    map = map || {};
+    var aliases = {
+      ab1:['ab1','arroz'],
+      ap1:['ap1','precocido','arroz_precocido','arrozPrecocido'],
+      fr1:['fr1','frijol1','frijol_1lb','frijol_1_lb'],
+      fr4:['fr4','frijol4','frijol_4lb','frijol_4_lb'],
+      ac:['ac','aceite','aceite_750ml','aceite_750_ml'],
+      ha:['ha','harina','harina_820grs','harina_820_grs']
+    };
+    var keys = aliases[prod.key] || [prod.key, prod.inv];
+    for(var i = 0; i < keys.length; i++){
+      if(map[keys[i]] !== undefined && map[keys[i]] !== null && map[keys[i]] !== '') return Number(map[keys[i]]) || 0;
+    }
+    return 0;
+  }
+
+  function getApprovedVentaForAgro(nombre, fecha){
+    var target = normText(nombre);
+    var rows = leerHistorialVentaLocal();
+    return rows.find(function(row){
+      var rowName = normText(row && (row.agromercado || row.nombre || ''));
+      return rowName === target && fechaReporteIgual(row && row.fecha, fecha);
+    }) || null;
+  }
+
+  function approvedVentaValues(report, prod){
+    var payload = ventaPayload(report);
+    var anterior = ventaMapValue(payload.inventario_inicio || payload.inicio || {}, prod);
+    var nuevo = ventaMapValue(payload.mercaderia_nueva || payload.nuevo || {}, prod);
+    var inicio = anterior + nuevo;
+    var ventas = ventaMapValue(payload.ventas_unidades || payload.ventas || {}, prod);
+    var faltante = ventaMapValue(payload.faltantes_unidades || payload.faltante || payload.apartado || {}, prod);
+    var danadas = ventaMapValue(payload.danadas_unidades || payload.danado || payload.danadas || {}, prod);
+    var inventario = ventaMapValue(payload.inventario_final || payload.inventario || {}, prod);
+    if (!inicio && (ventas || faltante || danadas || inventario)) inicio = ventas + faltante + danadas + inventario;
+    return { inicio:inicio, ventas:ventas, faltante:faltante, danadas:danadas, inventario:inventario };
+  }
+
+  function packageLabelVenta(prod){
+    return prod.key === 'ac' || prod.key === 'ha' ? 'cajas' : 'sacos';
+  }
+
+  function packageFactorVenta(prod){
+    if (prod.key === 'ac') return 20;
+    if (prod.key === 'ha') return 25;
+    return 80;
+  }
+
   function getAllAgromercadosVenta(){
     var grupos = typeof obtenerDestinosInventarioPorTipo === 'function'
       ? obtenerDestinosInventarioPorTipo()
@@ -16005,18 +16063,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!tbody) return;
 
     var draft = captureDraft();
+    var fecha = fechaReporteControl();
     var agros = getAllAgromercadosVenta();
     tbody.innerHTML = agros.map(function(agro){
       var meta = findAgroMeta(agro.nombre);
       var stock = getStockForAgro(agro.nombre);
       var estado = estadoReporteActual(agro.nombre);
+      var aprobado = estado === 'verde' ? getApprovedVentaForAgro(agro.nombre, fecha) : null;
       var productCells = VENTA_PRODUCTS.map(function(p){
         var saved = (draft[agro.nombre] && draft[agro.nombre][p.key]) || {};
-        var ventas = saved.ventas || 0;
-        var faltante = saved.faltante || 0;
-        var danadas = saved.danadas || 0;
-        var inicio = stock[p.inv] || 0;
-        var inventario = Math.max(0, inicio - ventas - faltante - danadas);
+        var aprobadoValues = aprobado ? approvedVentaValues(aprobado, p) : null;
+        var ventas = aprobadoValues ? aprobadoValues.ventas : (saved.ventas || 0);
+        var faltante = aprobadoValues ? aprobadoValues.faltante : (saved.faltante || 0);
+        var danadas = aprobadoValues ? aprobadoValues.danadas : (saved.danadas || 0);
+        var inicio = aprobadoValues ? aprobadoValues.inicio : (stock[p.inv] || 0);
+        var inventario = aprobadoValues ? aprobadoValues.inventario : Math.max(0, inicio - ventas - faltante - danadas);
         var diferencia = ventas + faltante + danadas + inventario - inicio;
         return cellHtml(p, VENTA_FIELDS[0], inicio)
           + cellHtml(p, VENTA_FIELDS[1], ventas)
@@ -16088,7 +16149,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (summary) {
       summary.innerHTML = VENTA_PRODUCTS.map(function(p){
         var remaining = totals[p.key].inventario;
-        return '<div class="' + stockLevel(remaining) + '"><strong>' + esc(p.label) + '</strong><br><span>' + remaining + '</span></div>';
+        var factor = packageFactorVenta(p);
+        var paquetes = factor ? (remaining / factor) : remaining;
+        return '<div class="' + stockLevel(remaining) + '"><strong>' + esc(p.label) + '</strong><br><span>' + remaining + ' lb/unid.</span><small>' + paquetes.toFixed(paquetes % 1 ? 2 : 0) + ' ' + packageLabelVenta(p) + '</small></div>';
       }).join('');
     }
 
