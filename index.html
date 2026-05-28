@@ -14727,12 +14727,23 @@ document.addEventListener('DOMContentLoaded', function() {
   function distributionDateForTipo(tipo){
     var id = tipo === 'CDA' ? 'distribucion-fecha' : 'descargas-fecha';
     var input = document.getElementById(id);
-    return (input && input.value) || (typeof fechaHoy === 'function' ? fechaHoy() : fechaISOActualSistema());
+    return normalizeDistributionDate((input && input.value) || (typeof fechaHoy === 'function' ? fechaHoy() : fechaISOActualSistema()));
+  }
+
+  function normalizeDistributionDate(value){
+    value = String(value || '').trim();
+    if(!value) return '';
+    var iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(iso) return iso[1] + '-' + String(iso[2]).padStart(2, '0') + '-' + String(iso[3]).padStart(2, '0');
+    var local = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(local) return local[3] + '-' + String(local[2]).padStart(2, '0') + '-' + String(local[1]).padStart(2, '0');
+    return value.slice(0, 10);
   }
 
   function dateOnOrBefore(value, fecha){
+    fecha = normalizeDistributionDate(fecha);
     if (!fecha) return true;
-    var rowDate = String(value || '').slice(0, 10);
+    var rowDate = normalizeDistributionDate(value);
     return rowDate && rowDate <= fecha;
   }
 
@@ -14744,7 +14755,8 @@ document.addEventListener('DOMContentLoaded', function() {
     try { data = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) { data = []; }
     (data || []).forEach(function(row){
       if(!row) return;
-      if(!dateOnOrBefore(row.fecha, fecha)) return;
+      var rowFecha = row.fecha || (row.payload && row.payload.fecha) || row.creado_en || row.timestamp;
+      if(!dateOnOrBefore(rowFecha, fecha)) return;
       addTotals(totals, row, 1);
     });
     return totals;
