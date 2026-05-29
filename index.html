@@ -8002,7 +8002,13 @@ function refrescarInventarioEnTiempoReal() {
 }
 
 function numeroInventario(valor){
-  return Number(valor || 0) || 0;
+  var n = Number(valor || 0) || 0;
+  if (Math.abs(n) < 0.005) return 0;
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+function formatoInventario(valor){
+  return numeroInventario(valor).toLocaleString('es-SV', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function totalInventarioRegistro(inv){
@@ -8018,7 +8024,7 @@ function totalInventarioRegistro(inv){
 }
 
 function celdaInventarioNumero(valor){
-  return '<td class="inv-num">' + numeroInventario(valor) + '</td>';
+  return '<td class="inv-num">' + formatoInventario(valor) + '</td>';
 }
 
 function claseTotalInventario(total){
@@ -8103,7 +8109,7 @@ window.renderInventarioTable = function(){
       + celdaInventarioNumero(inv.frijol4)
       + celdaInventarioNumero(inv.aceite)
       + celdaInventarioNumero(inv.harina)
-      + '<td class="inv-num inv-total' + claseTotalInventario(inv.total) + '"><strong>' + inv.total + '</strong></td>'
+      + '<td class="inv-num inv-total' + claseTotalInventario(inv.total) + '"><strong>' + formatoInventario(inv.total) + '</strong></td>'
       + '<td>' + (inv.observaciones || '') + '</td>'
       + '<td style="text-align:center;">'
         + '<button class="btn btn-sm btn-danger" onclick="eliminarInventario(\'' + inv.id + '\')" style="padding:2px 6px;font-size:0.7rem;">🗑️</button>'
@@ -8171,7 +8177,7 @@ window.renderInventarioTableFiltrado = function(datosFiltrados){
       + celdaInventarioNumero(inv.frijol4)
       + celdaInventarioNumero(inv.aceite)
       + celdaInventarioNumero(inv.harina)
-      + '<td class="inv-num inv-total' + claseTotalInventario(inv.total) + '"><strong>' + inv.total + '</strong></td>'
+      + '<td class="inv-num inv-total' + claseTotalInventario(inv.total) + '"><strong>' + formatoInventario(inv.total) + '</strong></td>'
       + '<td>' + (inv.observaciones || '') + '</td>'
       + '<td style="text-align:center;">'
         + '<button class="btn btn-sm btn-danger" onclick="eliminarInventario(\'' + inv.id + '\')" style="padding:2px 6px;font-size:0.7rem;">🗑️</button>'
@@ -10174,6 +10180,28 @@ window.cargarAgromercados = function(){
 window.renderAgromercados = function(){
   cargarAgromercados();
 };
+
+function asegurarRenderAgromercados(){
+  var tbody = document.getElementById('tabla-agromercados');
+  if (!tbody) return;
+  var texto = (tbody.textContent || '').trim().toLowerCase();
+  var visible = document.getElementById('seccion-agromercados');
+  if (texto.indexOf('cargando agromercados') >= 0 || (visible && visible.style.display !== 'none')) {
+    cargarAgromercados();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  setTimeout(asegurarRenderAgromercados, 250);
+  setTimeout(asegurarRenderAgromercados, 1000);
+});
+
+document.addEventListener('click', function(event){
+  var btn = event.target && event.target.closest ? event.target.closest('.data-tab-btn') : null;
+  if (btn && (btn.getAttribute('onclick') || '').indexOf('agromercados') >= 0) {
+    setTimeout(asegurarRenderAgromercados, 60);
+  }
+});
 
 window.cargarMunicipiosPorDistrito = function(){
   // Validar existencia de elementos
@@ -13036,6 +13064,8 @@ var LISTA_CDA = [
 var CDA_GRUPOS_ORDEN = ['soyapango', 'usulutan'];
 var CDA_GRUPOS_DESTINOS = {
   soyapango: [
+    'CDA SOYAPANGO',
+    'DISTRIBUCION CDA SOYAPANGO',
     'CIUDAD ARCE',
     'PUERTO DE LA LIBERTAD',
     'LA LIBERTAD',
@@ -13051,6 +13081,8 @@ var CDA_GRUPOS_DESTINOS = {
     'SAN VICENTE'
   ],
   usulutan: [
+    'CDA USULUTAN',
+    'DISTRIBUCION CDA USULUTAN',
     'BERLIN',
     'JOCORO',
     'SAN MIGUEL',
@@ -14925,7 +14957,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function normalizeNumber(value){
-    return Number(value || 0) || 0;
+    var n = Number(value || 0) || 0;
+    if (Math.abs(n) < 0.005) return 0;
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+  }
+
+  function formatNumberDist(value){
+    var n = normalizeNumber(value);
+    return n.toLocaleString('es-SV', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
   function productAmount(row, key){
@@ -15085,7 +15124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cont.innerHTML = '<div class="resumen-grid resumen-stock-live">' +
       PRODUCT_KEYS_DIST.map(function(key){
         var value = totals[key];
-        return '<div class="' + stockClass(value) + '"><strong>' + PRODUCT_LABELS_DIST[key] + '</strong><br><span>' + value + ' ' + PRODUCT_PACKAGE_LABELS_DIST[key] + '</span></div>';
+        return '<div class="' + stockClass(value) + '"><strong>' + PRODUCT_LABELS_DIST[key] + '</strong><br><span>' + formatNumberDist(value) + ' ' + PRODUCT_PACKAGE_LABELS_DIST[key] + '</span></div>';
       }).join('') +
       '</div>';
   }
@@ -15112,7 +15151,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!faltantes.length) return true;
 
     showAlert(alertId, 'Stock insuficiente: ' + faltantes.map(function(key){
-      return PRODUCT_LABELS_DIST[key] + ' queda en ' + remaining[key];
+      return PRODUCT_LABELS_DIST[key] + ' queda en ' + formatNumberDist(remaining[key]);
     }).join(' | '), 'err');
     return false;
   }
@@ -17177,7 +17216,18 @@ document.addEventListener('DOMContentLoaded', function() {
     return BODEGA_PRODUCTS.reduce(function(acc, p){ acc[p.key] = 0; return acc; }, {});
   };
 
-  function num(value){ return Number(value || 0) || 0; }
+  function round2(value){
+    var n = Number(value || 0) || 0;
+    if (Math.abs(n) < 0.005) return 0;
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+  }
+
+  function formatQty(value){
+    var n = round2(value);
+    return n.toLocaleString('es-SV', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  function num(value){ return round2(value); }
 
   function today(){
     if (typeof fechaHoy === 'function') return fechaHoy();
@@ -17291,10 +17341,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var final = emptyProducts();
     var diferencia = emptyProducts();
     BODEGA_PRODUCTS.forEach(function(p){
-      anterior[p.key] = anterior[p.key] - enviadoAnterior[p.key];
+      anterior[p.key] = Math.max(0, anterior[p.key] - enviadoAnterior[p.key]);
       suma[p.key] = anterior[p.key] + nuevo[p.key];
-      final[p.key] = suma[p.key] - enviado[p.key];
-      diferencia[p.key] = suma[p.key] - enviado[p.key] - final[p.key];
+      final[p.key] = Math.max(0, suma[p.key] - enviado[p.key]);
+      diferencia[p.key] = Math.max(0, suma[p.key] - enviado[p.key] - final[p.key]);
     });
     return {
       anterior: anterior,
@@ -17371,6 +17421,9 @@ document.addEventListener('DOMContentLoaded', function() {
     rows.bodegaTiendona = sumByLocation(['descargas-tiendona','descargas-tiendona-abajo','descargas-tiendona-arriba'], null, false);
     rows.cdaSoyapango = sumByLocation(['distribucion-cda','distribucion-cda-soyapango'], null, false);
     rows.cdaUsulutan = sumByLocation(['distribucion-cda-usulutan'], null, false);
+    [rows.bodegaTiendona, rows.cdaSoyapango, rows.cdaUsulutan].forEach(function(row){
+      BODEGA_PRODUCTS.forEach(function(p){ row[p.key] = Math.max(0, num(row[p.key])); });
+    });
 
     rows.diferencias = emptyProducts();
     BODEGA_PRODUCTS.forEach(function(p){
@@ -17395,10 +17448,10 @@ document.addEventListener('DOMContentLoaded', function() {
     return '<tr' + className + '><td>' + rowDef.label + '</td>' + BODEGA_PRODUCTS.map(function(p){
       var value = num(values[p.key]);
       if (rowDef.editable) {
-        return '<td><input class="warehouse-input" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="' + (value === 0 ? '' : value) + '" data-row="' + rowDef.key + '" data-prod="' + p.key + '"></td>';
+        return '<td><input class="warehouse-input" type="text" inputmode="decimal" placeholder="0" value="' + (value === 0 ? '' : formatQty(value)) + '" data-row="' + rowDef.key + '" data-prod="' + p.key + '"></td>';
       }
       var status = rowDef.diff ? (value === 0 ? ' warehouse-ok' : ' warehouse-bad') : '';
-      return '<td class="warehouse-value' + status + '">' + value + '</td>';
+      return '<td class="warehouse-value' + status + '">' + formatQty(value) + '</td>';
     }).join('') + '</tr>';
   }
 
@@ -17422,7 +17475,7 @@ document.addEventListener('DOMContentLoaded', function() {
           + BODEGA_PRODUCTS.map(function(p){
             var value = num(values[p.key]);
             var status = row.diff ? (value === 0 ? ' warehouse-ok' : ' warehouse-bad') : '';
-            return '<td class="warehouse-value' + status + '">' + value + '</td>';
+            return '<td class="warehouse-value' + status + '">' + formatQty(value) + '</td>';
           }).join('')
           + '</tr>';
       }).join('') + '</tbody></table></div>';
