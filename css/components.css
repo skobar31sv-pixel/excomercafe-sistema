@@ -317,7 +317,7 @@
 }
 
 .collapsible-header::after {
-  content:'▼';
+  content:'+';
   position:absolute;
   right:16px;
   top:50%;
@@ -328,7 +328,8 @@
 }
 
 .collapsible-header.expanded::after {
-  transform:translateY(-50%) rotate(180deg);
+  content:'-';
+  transform:translateY(-50%);
   color:var(--accent);
 }
 

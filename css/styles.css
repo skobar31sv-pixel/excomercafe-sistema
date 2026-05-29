@@ -693,6 +693,13 @@ main {
 
 /* HISTORY TABLE */
 .tbl{width:100%;border-collapse:collapse;font-size:0.75rem;}
+.tbl .agromercado-group-row td{
+  background:#eef6ff !important;
+  color:#17456b;
+  font-weight:900;
+  text-align:left;
+  text-transform:uppercase;
+}
 .tbl thead th{background:var(--brand);color:#fff;padding:6px 8px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.74rem;white-space:nowrap;}
 .tbl tbody tr:nth-child(even){background:var(--surface2);}
 .tbl tbody td{padding:5px 8px;border-bottom:1px solid var(--border2);vertical-align:middle;font-size:0.73rem;}

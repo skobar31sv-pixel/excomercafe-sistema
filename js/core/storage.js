@@ -251,7 +251,7 @@ window.guardarRegistro = function(){
   if (cont) cont.style.display = 'block';
 
   const btn = document.getElementById('btn-toggle-historial-registros');
-  if (btn) btn.textContent = '▲';
+  if (btn) btn.textContent = '-';
 
   showAlert('alert-agro', '✅ Registro guardado correctamente.', 'ok');
 };
@@ -744,10 +744,10 @@ window.migrateOldRecords = function(){
       if (cont) cont.style.display = 'block';
 
       const btn = document.getElementById('btn-toggle-historial-registros');
-      if (btn) btn.textContent = '▲';
+      if (btn) btn.textContent = '-';
 
       const icon = document.getElementById('historial-toggle-icon');
-      if (icon) icon.textContent = '▲';
+      if (icon) icon.textContent = '-';
     }, 80);
   };
 })();

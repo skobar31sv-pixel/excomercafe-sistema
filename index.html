@@ -4,8 +4,8 @@
 <title>EXCOMERCAFE — Reporte Agromercados</title>
 <link rel="icon" href="./favicon.ico"> <!-- icon -->
 <link rel="apple-touch-icon" href="./favicon.png">
-<link href="./css/styles.css?v=20260525-inventario-total-firmado" rel="stylesheet">
-<link href="./css/components.css?v=20260519-phase61" rel="stylesheet">
+<link href="./css/styles.css?v=20260528-agromercados-grupos" rel="stylesheet">
+<link href="./css/components.css?v=20260528-toggle-signs" rel="stylesheet">
 <link href="./css/distribution-matrix.css?v=20260528-cda-grupos" rel="stylesheet">
 <script>
   try {
@@ -1549,7 +1549,7 @@
   <div class="card-header">
     <span>📋 Historial de Registros</span>
     <div class="flex gap-8 items-center flex-wrap">
-      <button class="btn btn-sm btn-secondary" onclick="toggleHistorialRegistros()" id="btn-toggle-historial-registros"><span id="historial-toggle-icon">▼</span></button>
+      <button class="btn btn-sm btn-secondary" onclick="toggleHistorialRegistros()" id="btn-toggle-historial-registros"><span id="historial-toggle-icon">+</span></button>
       <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); imprimirTablaPorTitulo('Historial Control de Venta Agromercado', '#tbl-historial')">Imprimir</button>
     </div>
   </div>
@@ -1801,7 +1801,7 @@
   <div class="card" style="margin-top:16px;">
     <div class="card-header" style="cursor:pointer;" onclick="toggleHistorialDescargas()">
       <span>🚚 Historial de Distribución</span>
-      <span id="historial-descargas-toggle" style="font-size:0.8rem;color:var(--muted);">▼</span>
+      <span id="historial-descargas-toggle" style="font-size:0.8rem;color:var(--muted);">+</span>
       <div class="flex gap-8 items-center flex-wrap" style="margin-left:auto;">
         <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); imprimirHistorialTiendona()">Imprimir</button>
         <button type="button" class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); cargarVentasDesdeSupabase()">🔄 Actualizar</button>
@@ -1925,7 +1925,7 @@
 <div class="card" style="margin-top:16px;">
     <div class="card-header" style="cursor:pointer;" onclick="toggleHistorialDistribucion()">
       <span>🚚 Historial de Distribución</span>
-      <span id="historial-distribucion-toggle" style="font-size:0.8rem;color:var(--muted);">▼</span>
+      <span id="historial-distribucion-toggle" style="font-size:0.8rem;color:var(--muted);">+</span>
       <div class="flex gap-8 items-center flex-wrap" style="margin-left:auto;">
         <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); imprimirHistorialCDA()">Imprimir</button>
         <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); importarDistribucionExcel()">📂 Importar Excel</button>
@@ -2141,7 +2141,7 @@
   <div class="card" style="margin-top:16px;">
     <div class="card-header" style="cursor:pointer;" onclick="toggleHistorialInventario()">
       <span>📊 Historial de Inventario</span>
-      <span id="historial-inventario-toggle" style="font-size:0.8rem;color:var(--muted);">▼</span>
+      <span id="historial-inventario-toggle" style="font-size:0.8rem;color:var(--muted);">+</span>
       <div class="flex gap-8 items-center flex-wrap" style="margin-left:auto;">
         <input
           type="text"
@@ -2233,6 +2233,7 @@
             <tbody id="tabla-distritos"><tr><td>AHUACHAPAN CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(0)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(0)">🗑️</button></td></tr><tr><td>AHUACHAPAN SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(1)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(1)">🗑️</button></td></tr><tr><td>CABANAS ESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(2)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(2)">🗑️</button></td></tr><tr><td>CABANAS OESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(3)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(3)">🗑️</button></td></tr><tr><td>CHALATENANGO CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(4)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(4)">🗑️</button></td></tr><tr><td>CHALATENANGO SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(5)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(5)">🗑️</button></td></tr><tr><td>CUSCATLAN NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(6)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(6)">🗑️</button></td></tr><tr><td>CUSCATLAN SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(7)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(7)">🗑️</button></td></tr><tr><td>EL CONGO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(8)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(8)">🗑️</button></td></tr><tr><td>LA LIBERTAD</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(9)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(9)">🗑️</button></td></tr><tr><td>LA LIBERTAD CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(10)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(10)">🗑️</button></td></tr><tr><td>LA LIBERTAD COSTA</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(11)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(11)">🗑️</button></td></tr><tr><td>LA LIBERTAD ESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(12)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(12)">🗑️</button></td></tr><tr><td>LA LIBERTAD NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(13)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(13)">🗑️</button></td></tr><tr><td>LA LIBERTAD SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(14)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(14)">🗑️</button></td></tr><tr><td>LA PAZ ESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(15)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(15)">🗑️</button></td></tr><tr><td>LA UNION NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(16)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(16)">🗑️</button></td></tr><tr><td>LA UNION SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(17)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(17)">🗑️</button></td></tr><tr><td>MORAZAN NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(18)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(18)">🗑️</button></td></tr><tr><td>MORAZAN SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(19)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(19)">🗑️</button></td></tr><tr><td>SAN MIGUEL</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(20)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(20)">🗑️</button></td></tr><tr><td>SAN MIGUEL CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(21)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(21)">🗑️</button></td></tr><tr><td>SAN MIGUEL NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(22)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(22)">🗑️</button></td></tr><tr><td>SAN MIGUEL OESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(23)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(23)">🗑️</button></td></tr><tr><td>SAN SALVADOR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(24)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(24)">🗑️</button></td></tr><tr><td>SAN SALVADOR CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(25)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(25)">🗑️</button></td></tr><tr><td>SAN SALVADOR ESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(26)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(26)">🗑️</button></td></tr><tr><td>SAN SALVADOR NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(27)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(27)">🗑️</button></td></tr><tr><td>SAN SALVADOR OESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(28)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(28)">🗑️</button></td></tr><tr><td>SAN SALVADOR SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(29)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(29)">🗑️</button></td></tr><tr><td>SAN VICENTE NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(30)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(30)">🗑️</button></td></tr><tr><td>SAN VICENTE SUR</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(31)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(31)">🗑️</button></td></tr><tr><td>SANTA ANA CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(32)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(32)">🗑️</button></td></tr><tr><td>SANTA ANA NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(33)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(33)">🗑️</button></td></tr><tr><td>SANTA ANA OESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(34)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(34)">🗑️</button></td></tr><tr><td>SANTA ROSA DE LIMA</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(35)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(35)">🗑️</button></td></tr><tr><td>SONSONATE CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(36)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(36)">🗑️</button></td></tr><tr><td>SONSONATE ESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(37)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(37)">🗑️</button></td></tr><tr><td>SONSONATE OESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(38)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(38)">🗑️</button></td></tr><tr><td>USULUTAN</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(39)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(39)">🗑️</button></td></tr><tr><td>USULUTAN CENTRO</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(40)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(40)">🗑️</button></td></tr><tr><td>USULUTAN NORTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(41)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(41)">🗑️</button></td></tr><tr><td>USULUTAN OESTE</td><td><button class="btn btn-sm btn-secondary" onclick="editarDistrito(42)">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarDistrito(42)">🗑️</button></td></tr></tbody>
           </table>
         </div>
+        <div id="agromercados-resumen-grupos" style="margin-top:8px;color:var(--muted);font-size:0.82rem;font-weight:700;"></div>
       </div>
     </div>
 
@@ -5426,7 +5427,7 @@ window.guardarRegistro = function(){
   if (cont) cont.style.display = 'block';
 
   const btn = document.getElementById('btn-toggle-historial-registros');
-  if (btn) btn.textContent = '▲';
+  if (btn) btn.textContent = '-';
 
   renderBancos?.();
   cargarResumenRemesas?.();
@@ -6411,7 +6412,7 @@ function expandirHistorialControlVenta(){
   var card = cont && cont.closest('.card');
   if(card) card.style.display = '';
   if(cont) cont.style.display = 'block';
-  if(icon) icon.textContent = '▲';
+  if(icon) icon.textContent = '-';
 }
 
 window.editarRegistroDesdeReporte = function(index){
@@ -7968,7 +7969,7 @@ window.guardarInventario = function(){
   if (histInv) histInv.style.display = 'block';
 
   const toggleInv = document.getElementById('historial-inventario-toggle');
-  if (toggleInv) toggleInv.textContent = '▲';
+  if (toggleInv) toggleInv.textContent = '-';
   
   limpiarFormularioInventario();
   showAlert('alert-inventario', '✅ Inventario guardado correctamente', 'ok');
@@ -8330,11 +8331,11 @@ window.toggleResumenInventario = function(){
   
   if(content.style.display === 'none'){
     content.style.display = 'block';
-    toggle.textContent = '▲';
+    toggle.textContent = '-';
     actualizarResumenVisual();
   } else {
     content.style.display = 'none';
-    toggle.textContent = '▼';
+    toggle.textContent = '+';
   }
 };
 
@@ -8344,10 +8345,10 @@ window.toggleHistorialInventario = function(){
   
   if(content.style.display === 'none'){
     content.style.display = 'block';
-    toggle.textContent = '▲';
+    toggle.textContent = '-';
   } else {
     content.style.display = 'none';
-    toggle.textContent = '▼';
+    toggle.textContent = '+';
   }
 };
 
@@ -8360,11 +8361,11 @@ window.toggleHistorialDistribucion = function(){
   if(content.style.display === 'none'){
     content.style.display = 'block';
     if(button) button.textContent = 'Abrir/Cerrar';
-    toggle.textContent = '?';
+    toggle.textContent = '-';
   } else {
     content.style.display = 'none';
     if(button) button.textContent = 'Abrir/Cerrar';
-    toggle.textContent = '?';
+    toggle.textContent = '+';
   }
 };
 
@@ -8546,10 +8547,10 @@ window.toggleHistorialRegistros = function(){
   
   if(content.style.display === 'none'){
     content.style.display = 'block';
-    if(icon) icon.textContent = '▲';
+    if(icon) icon.textContent = '-';
   } else {
     content.style.display = 'none';
-    if(icon) icon.textContent = '▼';
+    if(icon) icon.textContent = '+';
   }
 };
 
@@ -8559,10 +8560,10 @@ window.toggleStockAgromercados = function(){
   
   if(content.style.display === 'none'){
     content.style.display = 'block';
-    toggle.textContent = '▲';
+    toggle.textContent = '-';
   } else {
     content.style.display = 'none';
-    toggle.textContent = '▼';
+    toggle.textContent = '+';
   }
 };
 
@@ -8656,7 +8657,7 @@ window.actualizarResumenVisual = function(){
   html += '<div style="margin-bottom:20px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--bg-secondary);padding:12px;border-radius:8px;margin-bottom:12px;" onclick="toggleStockAgromercados()">';
   html += '<h3 style="color:var(--brand);margin:0;">🌾 Stock por Agromercado</h3>';
-  html += '<span id="stock-agromercados-toggle" style="font-size:0.8rem;color:var(--muted);">▼</span>';
+  html += '<span id="stock-agromercados-toggle" style="font-size:0.8rem;color:var(--muted);">+</span>';
   html += '</div>';
   html += '<div id="stock-agromercados-content" style="display:none;">';
   
@@ -10110,6 +10111,87 @@ function construirAgromercadosBaseDesdeCatalogo(){
   return agromercados;
 }
 
+function grupoAgromercadoSistema(agro){
+  var nombre = agro && (agro.nombre || agro.a || agro.agromercado || '');
+  var grupoCDA = typeof obtenerGrupoCDAParaDestino === 'function' ? obtenerGrupoCDAParaDestino(nombre, agro) : '';
+  if (grupoCDA === 'soyapango') return 'cda-soyapango';
+  if (grupoCDA === 'usulutan') return 'cda-usulutan';
+  var grupoTiendona = typeof obtenerGrupoTiendonaParaDestino === 'function' ? obtenerGrupoTiendonaParaDestino(nombre) : '';
+  if (grupoTiendona === 'arriba') return 'tiendona-arriba';
+  if (grupoTiendona === 'abajo') return 'tiendona-abajo';
+  return 'sin-clasificar';
+}
+
+function etiquetaGrupoAgromercado(grupo){
+  return {
+    'tiendona-arriba': 'TIENDONA ARRIBA',
+    'tiendona-abajo': 'TIENDONA ABAJO',
+    'cda-soyapango': 'CDA SOYAPANGO',
+    'cda-usulutan': 'CDA USULUTAN',
+    'sin-clasificar': 'SIN CLASIFICAR'
+  }[grupo] || 'SIN CLASIFICAR';
+}
+
+function referenciaGrupoAgromercado(grupo, fallback){
+  if (grupo === 'tiendona-arriba') return 'TIENDONA ARRIBA';
+  if (grupo === 'tiendona-abajo') return 'TIENDONA ABAJO';
+  if (grupo === 'cda-soyapango') return 'CDA SOYAPANGO';
+  if (grupo === 'cda-usulutan') return 'CDA USULUTAN';
+  return fallback || '';
+}
+
+function tipoGrupoAgromercado(grupo, fallback){
+  if (grupo === 'cda-soyapango' || grupo === 'cda-usulutan') return 'CDA';
+  if (grupo === 'tiendona-arriba' || grupo === 'tiendona-abajo') return 'TIENDONA';
+  return fallback || 'SIN DEFINIR';
+}
+
+function ordenarAgromercadosSistema(a, b){
+  var orden = { 'tiendona-arriba':0, 'tiendona-abajo':1, 'cda-soyapango':2, 'cda-usulutan':3, 'sin-clasificar':4 };
+  var grupoA = a.__grupo || grupoAgromercadoSistema(a);
+  var grupoB = b.__grupo || grupoAgromercadoSistema(b);
+  if (orden[grupoA] !== orden[grupoB]) return orden[grupoA] - orden[grupoB];
+  var distritoCmp = String(a.distrito || '').localeCompare(String(b.distrito || ''), 'es', { sensitivity:'base' });
+  if (distritoCmp) return distritoCmp;
+  var municipioCmp = String(a.municipio || '').localeCompare(String(b.municipio || ''), 'es', { sensitivity:'base' });
+  if (municipioCmp) return municipioCmp;
+  return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es', { sensitivity:'base' });
+}
+
+function obtenerAgromercadosSistemaCompletos(){
+  var base = construirAgromercadosBaseDesdeCatalogo();
+  var guardados = [];
+  try { guardados = JSON.parse(localStorage.getItem('agromercados-data') || '[]'); } catch(e) { guardados = []; }
+  if (!Array.isArray(guardados)) guardados = [];
+  var mapa = {};
+
+  function add(agro){
+    if (!agro) return;
+    var nombre = String(agro.nombre || agro.agromercado || agro.a || '').trim();
+    if (!nombre) return;
+    var key = normalizarNombre(nombre);
+    var prev = mapa[key] || {};
+    var merged = Object.assign({}, prev, {
+      distrito: agro.distrito || prev.distrito || '',
+      municipio: agro.municipio || agro.m || prev.municipio || '',
+      nombre: nombre,
+      referencia: agro.referencia || prev.referencia || ''
+    });
+    merged.__grupo = grupoAgromercadoSistema(merged);
+    merged.tipo = tipoGrupoAgromercado(merged.__grupo, agro.tipo || prev.tipo);
+    merged.referencia = referenciaGrupoAgromercado(merged.__grupo, merged.referencia);
+    mapa[key] = merged;
+  }
+
+  base.forEach(add);
+  guardados.forEach(add);
+  var lista = Object.keys(mapa).map(function(key){ return mapa[key]; }).sort(ordenarAgromercadosSistema);
+  localStorage.setItem('agromercados-data', JSON.stringify(lista.map(function(agro){
+    return { distrito:agro.distrito, municipio:agro.municipio, nombre:agro.nombre, tipo:agro.tipo, referencia:agro.referencia };
+  })));
+  return lista;
+}
+
 window.cargarAgromercados = function(){
   var tbody = document.getElementById('tabla-agromercados');
   var distritoSelect = document.getElementById('agromercado-distrito');
@@ -10119,24 +10201,7 @@ window.cargarAgromercados = function(){
   if (!tbody || !distritoSelect || !municipioSelect) return;
 
   try {
-    var agromercados = [];
-    try { agromercados = JSON.parse(localStorage.getItem('agromercados-data')||'[]'); } catch(e) { agromercados = []; }
-    if (!Array.isArray(agromercados) || agromercados.length === 0) {
-      agromercados = construirAgromercadosBaseDesdeCatalogo();
-      localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
-    } else {
-      var changed = false;
-      agromercados.forEach(function(agro){
-        if (!agro || !agro.nombre) return;
-        var grupoCDA = typeof obtenerGrupoCDAParaDestino === 'function' ? obtenerGrupoCDAParaDestino(agro.nombre, agro) : '';
-        var grupoTiendona = typeof obtenerGrupoTiendonaParaDestino === 'function' ? obtenerGrupoTiendonaParaDestino(agro.nombre) : '';
-        var tipo = grupoCDA ? 'CDA' : 'TIENDONA';
-        var referencia = grupoCDA ? ('CDA ' + (grupoCDA === 'usulutan' ? 'USULUTAN' : 'SOYAPANGO')) : (grupoTiendona ? ('TIENDONA ' + grupoTiendona.toUpperCase()) : (agro.referencia || ''));
-        if (agro.tipo !== tipo) { agro.tipo = tipo; changed = true; }
-        if (!agro.referencia || agro.referencia === 'SIN DEFINIR') { agro.referencia = referencia; changed = true; }
-      });
-      if (changed) localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
-    }
+    var agromercados = obtenerAgromercadosSistemaCompletos();
 
     var distritos = [];
     try { distritos = JSON.parse(localStorage.getItem('distritos-data')||'[]'); } catch(e) { distritos = []; }
@@ -10158,7 +10223,18 @@ window.cargarAgromercados = function(){
     }
 
     tbody.innerHTML = '';
+    var grupoActual = '';
+    var resumen = {};
     agromercados.forEach(function(agro, index){
+      var grupo = agro.__grupo || grupoAgromercadoSistema(agro);
+      resumen[grupo] = (resumen[grupo] || 0) + 1;
+      if (grupo !== grupoActual) {
+        grupoActual = grupo;
+        var grupoTr = document.createElement('tr');
+        grupoTr.className = 'agromercado-group-row';
+        grupoTr.innerHTML = '<td colspan="6">' + etiquetaGrupoAgromercado(grupo) + '</td>';
+        tbody.appendChild(grupoTr);
+      }
       var tr = document.createElement('tr');
       tr.innerHTML = '<td>' + (agro.distrito || 'SIN DEFINIR') + '</td>' +
         '<td>' + (agro.municipio || 'SIN DEFINIR') + '</td>' +
@@ -10171,6 +10247,13 @@ window.cargarAgromercados = function(){
           '</td>';
       tbody.appendChild(tr);
     });
+    var resumenEl = document.getElementById('agromercados-resumen-grupos');
+    if (resumenEl) {
+      resumenEl.textContent = ['tiendona-arriba','tiendona-abajo','cda-soyapango','cda-usulutan','sin-clasificar']
+        .filter(function(grupo){ return resumen[grupo]; })
+        .map(function(grupo){ return etiquetaGrupoAgromercado(grupo) + ': ' + resumen[grupo]; })
+        .join(' | ');
+    }
   } catch(error) {
     console.error('No se pudieron cargar agromercados:', error);
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:20px;">Error al cargar agromercados. Se regeneraran al actualizar la pagina.</td></tr>';
@@ -12118,10 +12201,10 @@ document.addEventListener('DOMContentLoaded', function(){
     
     if (content.style.display === 'none') {
       content.style.display = 'block';
-      toggle.textContent = '▲';
+      toggle.textContent = '-';
     } else {
       content.style.display = 'none';
-      toggle.textContent = '▼';
+      toggle.textContent = '+';
     }
   }
   
@@ -14527,7 +14610,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (cont) cont.style.display = 'block';
 
       const btn = document.getElementById('btn-toggle-historial-registros');
-      if (btn) btn.textContent = '▲';
+      if (btn) btn.textContent = '-';
 
       const tbody = document.getElementById('tbody-historial');
       if (tbody) tbody.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
