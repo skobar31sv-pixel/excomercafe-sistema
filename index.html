@@ -10105,60 +10105,70 @@ function construirAgromercadosBaseDesdeCatalogo(){
 }
 
 window.cargarAgromercados = function(){
-  var agromercados = [];
-  try { agromercados = JSON.parse(localStorage.getItem('agromercados-data')||'[]'); } catch(e) { agromercados = []; }
-  if (!Array.isArray(agromercados) || agromercados.length === 0) {
-    agromercados = construirAgromercadosBaseDesdeCatalogo();
-    localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
-  } else {
-    var changed = false;
-    agromercados.forEach(function(agro){
-      if (!agro || !agro.nombre) return;
-      var grupoCDA = typeof obtenerGrupoCDAParaDestino === 'function' ? obtenerGrupoCDAParaDestino(agro.nombre, agro) : '';
-      var grupoTiendona = typeof obtenerGrupoTiendonaParaDestino === 'function' ? obtenerGrupoTiendonaParaDestino(agro.nombre) : '';
-      var tipo = grupoCDA ? 'CDA' : 'TIENDONA';
-      var referencia = grupoCDA ? ('CDA ' + (grupoCDA === 'usulutan' ? 'USULUTAN' : 'SOYAPANGO')) : (grupoTiendona ? ('TIENDONA ' + grupoTiendona.toUpperCase()) : (agro.referencia || ''));
-      if (agro.tipo !== tipo) { agro.tipo = tipo; changed = true; }
-      if (!agro.referencia || agro.referencia === 'SIN DEFINIR') { agro.referencia = referencia; changed = true; }
-    });
-    if (changed) localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
-  }
   var tbody = document.getElementById('tabla-agromercados');
   var distritoSelect = document.getElementById('agromercado-distrito');
   var municipioSelect = document.getElementById('agromercado-municipio');
   
   // Validar existencia de elementos
   if (!tbody || !distritoSelect || !municipioSelect) return;
-  
-  // Cargar distritos
-  var distritos = JSON.parse(localStorage.getItem('distritos-data')||'[]');
-  distritoSelect.innerHTML = '<option value="">-- Seleccionar Distrito --</option>';
-  distritos.forEach(function(distrito){
-    var option = document.createElement('option');
-    option.value = distrito;
-    option.textContent = distrito;
-    distritoSelect.appendChild(option);
-  });
-  
-  if(agromercados.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No hay agromercados registrados</td></tr>';
-    return;
+
+  try {
+    var agromercados = [];
+    try { agromercados = JSON.parse(localStorage.getItem('agromercados-data')||'[]'); } catch(e) { agromercados = []; }
+    if (!Array.isArray(agromercados) || agromercados.length === 0) {
+      agromercados = construirAgromercadosBaseDesdeCatalogo();
+      localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
+    } else {
+      var changed = false;
+      agromercados.forEach(function(agro){
+        if (!agro || !agro.nombre) return;
+        var grupoCDA = typeof obtenerGrupoCDAParaDestino === 'function' ? obtenerGrupoCDAParaDestino(agro.nombre, agro) : '';
+        var grupoTiendona = typeof obtenerGrupoTiendonaParaDestino === 'function' ? obtenerGrupoTiendonaParaDestino(agro.nombre) : '';
+        var tipo = grupoCDA ? 'CDA' : 'TIENDONA';
+        var referencia = grupoCDA ? ('CDA ' + (grupoCDA === 'usulutan' ? 'USULUTAN' : 'SOYAPANGO')) : (grupoTiendona ? ('TIENDONA ' + grupoTiendona.toUpperCase()) : (agro.referencia || ''));
+        if (agro.tipo !== tipo) { agro.tipo = tipo; changed = true; }
+        if (!agro.referencia || agro.referencia === 'SIN DEFINIR') { agro.referencia = referencia; changed = true; }
+      });
+      if (changed) localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
+    }
+
+    var distritos = [];
+    try { distritos = JSON.parse(localStorage.getItem('distritos-data')||'[]'); } catch(e) { distritos = []; }
+    if (!Array.isArray(distritos) || distritos.length === 0) {
+      distritos = typeof AGROMERCADOS_DATA !== 'undefined' ? Object.keys(AGROMERCADOS_DATA).sort() : [];
+      localStorage.setItem('distritos-data', JSON.stringify(distritos));
+    }
+    distritoSelect.innerHTML = '<option value="">-- Seleccionar Distrito --</option>';
+    distritos.forEach(function(distrito){
+      var option = document.createElement('option');
+      option.value = distrito;
+      option.textContent = distrito;
+      distritoSelect.appendChild(option);
+    });
+
+    if(agromercados.length === 0){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No hay agromercados registrados</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    agromercados.forEach(function(agro, index){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (agro.distrito || 'SIN DEFINIR') + '</td>' +
+        '<td>' + (agro.municipio || 'SIN DEFINIR') + '</td>' +
+        '<td>' + (agro.nombre || '') + '</td>' +
+        '<td><span class="badge" style="background:' + (agro.tipo === 'CDA' ? 'var(--success)' : agro.tipo === 'TIENDONA' ? 'var(--accent)' : 'var(--muted)') + ';color:white;padding:2px 8px;border-radius:4px;font-size:0.75rem;">' + (agro.tipo || 'SIN DEFINIR') + '</span></td>' +
+        '<td>' + (agro.referencia || 'SIN DEFINIR') + '</td>' +
+        '<td>' +
+          '<button class="btn btn-sm btn-secondary" onclick="editarAgromercado(' + index + ')">✏️</button> ' +
+          '<button class="btn btn-sm btn-danger" onclick="eliminarAgromercado(' + index + ')">🗑️</button>' +
+          '</td>';
+      tbody.appendChild(tr);
+    });
+  } catch(error) {
+    console.error('No se pudieron cargar agromercados:', error);
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:20px;">Error al cargar agromercados. Se regeneraran al actualizar la pagina.</td></tr>';
   }
-  
-  tbody.innerHTML = '';
-  agromercados.forEach(function(agro, index){
-    var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (agro.distrito || 'SIN DEFINIR') + '</td>' +
-      '<td>' + (agro.municipio || 'SIN DEFINIR') + '</td>' +
-      '<td>' + agro.nombre + '</td>' +
-      '<td><span class="badge" style="background:' + (agro.tipo === 'CDA' ? 'var(--success)' : agro.tipo === 'Tiendona' ? 'var(--accent)' : 'var(--muted)') + ';color:white;padding:2px 8px;border-radius:4px;font-size:0.75rem;">' + (agro.tipo || 'SIN DEFINIR') + '</span></td>' +
-      '<td>' + (agro.referencia || 'SIN DEFINIR') + '</td>' +
-      '<td>' +
-        '<button class="btn btn-sm btn-secondary" onclick="editarAgromercado(' + index + ')">✏️</button> ' +
-        '<button class="btn btn-sm btn-danger" onclick="eliminarAgromercado(' + index + ')">🗑️</button>' +
-        '</td>';
-    tbody.appendChild(tr);
-  });
 };
 
 window.renderAgromercados = function(){
@@ -17145,9 +17155,9 @@ document.addEventListener('DOMContentLoaded', function() {
       locations: ['distribucion-cda','distribucion-cda-soyapango','cda'],
       distributionKey: 'distribucion-cda-data',
       distributionFilter: function(row){
-        var destino = String(row && (row.cda || row.agromercado || row.destino || '')).toLowerCase();
-        var lugar = String(row && (row.lugar || row.ubicacion || '')).toLowerCase();
-        return destino.indexOf('usul') < 0 && lugar.indexOf('usul') < 0;
+        return typeof obtenerGrupoCDAParaDestino === 'function'
+          ? obtenerGrupoCDAParaDestino(row && (row.cda || row.agromercado || row.destino || ''), row) === 'soyapango'
+          : true;
       }
     },
     {
@@ -17156,9 +17166,9 @@ document.addEventListener('DOMContentLoaded', function() {
       locations: ['distribucion-cda-usulutan'],
       distributionKey: 'distribucion-cda-data',
       distributionFilter: function(row){
-        var destino = String(row && (row.cda || row.agromercado || row.destino || '')).toLowerCase();
-        var lugar = String(row && (row.lugar || row.ubicacion || '')).toLowerCase();
-        return destino.indexOf('usul') >= 0 || lugar.indexOf('usul') >= 0;
+        return typeof obtenerGrupoCDAParaDestino === 'function'
+          ? obtenerGrupoCDAParaDestino(row && (row.cda || row.agromercado || row.destino || ''), row) === 'usulutan'
+          : false;
       }
     }
   ];
