@@ -1,0 +1,62 @@
+Seccion	Orden	Agromercado
+TIENDONA ARRIBA	1	Acajutla, mercado de Acajutla
+TIENDONA ARRIBA	2	Alcaldia de Mejicanos
+TIENDONA ARRIBA	3	Apastepeque
+TIENDONA ARRIBA	4	Apopa, Parque Central Noe Canjura
+TIENDONA ARRIBA	5	Chalchuapa parque central
+TIENDONA ARRIBA	6	Chinameca, Parque Central
+TIENDONA ARRIBA	7	Ciudad barrios tiangue municipal
+TIENDONA ARRIBA	8	Ciudad Delgado, Plaza Monsenor Romero
+TIENDONA ARRIBA	9	Cojutepeque, parque Alamedas
+TIENDONA ARRIBA	10	Colonia El Palmar
+TIENDONA ARRIBA	11	El Paraiso, cancha techada de parque municipal
+TIENDONA ARRIBA	12	Ilobasco, Parque Central
+TIENDONA ARRIBA	13	Ilopango, TICSA
+TIENDONA ARRIBA	14	Izalco, Casa Barrientos
+TIENDONA ARRIBA	15	Jocoaltique, supermercado los quebrachos
+TIENDONA ARRIBA	16	Metapan (Mercado municipal exrastro)
+TIENDONA ARRIBA	17	Parque Concordia
+TIENDONA ARRIBA	18	Parque Ecologico Olocuilta
+TIENDONA ARRIBA	19	Placita El Calvario
+TIENDONA ARRIBA	20	Quezaltepeque, Plaza Centenario
+TIENDONA ARRIBA	21	San Francisco Menendez (Colonia La Palma)
+TIENDONA ARRIBA	22	San Marcos, Parque Joyas de Esperanza y Paz
+TIENDONA ARRIBA	23	San Rafael Cedro
+TIENDONA ARRIBA	24	Santa Tecla, Parque Daniel Hernandez ( frente a mezon goya)
+TIENDONA ARRIBA	25	Sensuntepeque, Parque Central
+TIENDONA ARRIBA	26	Soyapango, Redondel de Unicentro
+TIENDONA ARRIBA	27	Zacatecoluca, Plaza Civica
+TIENDONA ABAJO	1	Armenia, parque de Armenia
+TIENDONA ABAJO	2	Frente a la Alcaldia de Suchitoto
+TIENDONA ABAJO	3	Frente a la parroquia Carlos Borromeo
+TIENDONA ABAJO	4	Ilopango, Esquina Polideportivo Altavista
+TIENDONA ABAJO	5	Nueva Concepcion parque municipal
+TIENDONA ABAJO	6	Parque Central Aguilares
+TIENDONA ABAJO	7	Parque Rafael Campos, 7a. Calle Poniente, 7a. Calle Oriente
+TIENDONA ABAJO	8	Polideportivo El Congo
+TIENDONA ABAJO	9	San Martin, Alcaldia de San Martin
+TIENDONA ABAJO	10	Skate Park colonia IVU
+CDA SOYAPANGO	1	Av 5 de noviembre, contiguo a casa de la cultura de Atiquizaya
+CDA SOYAPANGO	2	Ayutuxtepeque, Plaza Municipal ( Parque Bonanza Agromercado)
+CDA SOYAPANGO	3	Bo el centro, 6a calle poniente, Juayua
+CDA SOYAPANGO	4	Ciudad Arce, Parque Central
+CDA SOYAPANGO	5	Esquina Cancha Tacon
+CDA SOYAPANGO	6	Km 12 Calle Alberto Masferrer , Santo Tomas
+CDA SOYAPANGO	7	Parque Municipal Mario Molina
+CDA SOYAPANGO	8	San Juan Opico, Parque Central
+CDA SOYAPANGO	9	San Vicente, Parque Central
+CDA SOYAPANGO	10	Santa Tecla 2
+CDA SOYAPANGO	11	Zaragoza
+CDA USULUTAN	1	Anamoros calle cirilo bonilla umanzor
+CDA USULUTAN	2	Barrio la cruz, km. 121 El Transito
+CDA USULUTAN	3	Campo de La Feria San Francisco Gotera
+CDA USULUTAN	4	Centro de Gobierno Municipal
+CDA USULUTAN	5	Corinto barrio las delicias
+CDA USULUTAN	6	Jiquilisco, esquina opuesta a la Alcaldia Municipal de Jiquilisco
+CDA USULUTAN	7	Jocoro Polideportivo Tierra de Fuego
+CDA USULUTAN	8	Mercado Municipal #5, Final 18 Ave Norte Mercado Municipal #5
+CDA USULUTAN	9	Parque Berlin de Ex injuve de Berlin
+CDA USULUTAN	10	Parque de Alcaldia Municipal del Triunfo
+CDA USULUTAN	11	San Miguel Centro (Barraza)
+CDA USULUTAN	12	Santa Rosa de Lima, Terminal de Buses Santa Rosa de Lima
+CDA USULUTAN	13	Zona verde, colonia Las Mercedes 1ra salida hacia el Triunfo( SANTIAGO DE MARIA)

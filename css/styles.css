@@ -692,6 +692,51 @@ main {
 .tc .tc-sub{font-size:0.68rem;color:#6b7280;margin-top:4px;}
 
 /* HISTORY TABLE */
+.agromercados-catalog-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:12px;
+  padding:12px 14px;
+  background:#f8fafc;
+  border:1px solid var(--border2);
+  border-radius:8px;
+}
+.agromercados-catalog-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1rem;
+  font-weight:800;
+  color:#111827;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+.agromercados-catalog-sub{
+  color:var(--muted);
+  font-size:.76rem;
+  font-weight:600;
+  margin-top:2px;
+}
+.agromercados-resumen-grupos{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:6px;
+  max-width:560px;
+}
+.agromercados-resumen-grupos span{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:3px 8px;
+  border-radius:6px;
+  background:#ffffff;
+  border:1px solid #dbeafe;
+  color:#17456b;
+  font-size:.72rem;
+  font-weight:800;
+  white-space:nowrap;
+}
 .tbl{width:100%;border-collapse:collapse;font-size:0.75rem;}
 .tbl .agromercado-group-row td{
   background:#eef6ff !important;
