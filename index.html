@@ -2008,14 +2008,14 @@
   </div>
   
   <!-- Hidden input for file import -->
-  <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="importarDevolucionesExcel(this)">
+  <input type="file" id="devoluciones-excel-import-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="importarDevolucionesExcel(this)">
   
   <!-- DEVOLUCIONES TABLE -->
   <div class="card">
     <div class="card-header">
       <span>📊 Historial de Devoluciones</span>
       <div class="flex gap-8 items-center flex-wrap">
-        <button class="btn btn-sm btn-secondary" onclick="document.getElementById(&#39;excel-import-input&#39;).click()">📂 Importar Excel</button>
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById(&#39;devoluciones-excel-import-input&#39;).click()">📂 Importar Excel</button>
         <button class="btn btn-sm btn-primary" onclick="imprimirHistorialDevoluciones()">Imprimir</button>
         <button class="btn btn-sm btn-accent" onclick="exportarDevoluciones()">📥 Exportar Procesado</button>
       </div>
@@ -10167,11 +10167,15 @@ function obtenerAgromercadosSistemaCompletos(){
     var key = normalizarNombre(nombre);
     var prev = mapa[key] || {};
     var meta = metaCatalogo(nombre);
+    function datoValido(valor){
+      var texto = String(valor || '').trim();
+      return texto && normalizarNombre(texto) !== 'SIN DEFINIR' ? texto : '';
+    }
     var merged = Object.assign({}, prev, {
-      distrito: agro.distrito || prev.distrito || meta.distrito,
-      municipio: agro.municipio || agro.m || prev.municipio || meta.municipio,
+      distrito: datoValido(agro.distrito) || datoValido(prev.distrito) || meta.distrito,
+      municipio: datoValido(agro.municipio || agro.m) || datoValido(prev.municipio) || meta.municipio,
       nombre: nombre,
-      referencia: agro.referencia || prev.referencia || ''
+      referencia: datoValido(agro.referencia) || datoValido(prev.referencia) || ''
     });
     merged.__grupo = grupoAgromercadoSistema(merged);
     merged.tipo = tipoGrupoAgromercado(merged.__grupo, agro.tipo || prev.tipo);
@@ -10196,6 +10200,13 @@ function obtenerAgromercadosSistemaCompletos(){
       });
     });
   }
+
+  try {
+    var agromercadosGuardados = JSON.parse(localStorage.getItem('agromercados-data') || '[]');
+    if (Array.isArray(agromercadosGuardados)) {
+      agromercadosGuardados.forEach(function(agro){ add(agro); });
+    }
+  } catch(e) {}
 
   var lista = Object.keys(mapa).map(function(key){ return mapa[key]; }).sort(ordenarAgromercadosSistema);
   localStorage.setItem('agromercados-data', JSON.stringify(lista.map(function(agro){
@@ -10476,6 +10487,250 @@ window.importarAgromercadosExcel = function(input){
   reader.readAsArrayBuffer(file);
   // Limpiar input
   input.value = '';
+};
+
+window.importarDatosDesdeExcel = function(input){
+  var file = input && input.files ? input.files[0] : null;
+  if(!file) return;
+
+  function alertDatos(msg, tipo){
+    if(typeof showAlert === 'function') showAlert('datos', msg, tipo || 'ok');
+    else alert(msg);
+  }
+
+  if(typeof XLSX === 'undefined'){
+    alertDatos('No se pudo cargar el lector de Excel.', 'err');
+    input.value = '';
+    return;
+  }
+
+  function normalizarHeader(valor){
+    return String(valor || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function normalizarClave(valor){
+    if(typeof normalizarNombre === 'function') return normalizarNombre(valor);
+    return String(valor || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function valor(row, nombres){
+    for(var i = 0; i < nombres.length; i++){
+      var objetivo = normalizarHeader(nombres[i]);
+      for(var key in row){
+        if(!Object.prototype.hasOwnProperty.call(row, key)) continue;
+        if(normalizarHeader(key) === objetivo){
+          var val = row[key];
+          if(val !== undefined && val !== null && String(val).trim() !== '') return String(val).trim();
+        }
+      }
+    }
+    return '';
+  }
+
+  function tieneColumna(row, nombres){
+    return nombres.some(function(nombre){
+      var objetivo = normalizarHeader(nombre);
+      return Object.keys(row).some(function(key){ return normalizarHeader(key) === objetivo; });
+    });
+  }
+
+  function leerLista(key, fallback){
+    try {
+      var data = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback || []));
+      return Array.isArray(data) ? data : (fallback || []);
+    } catch(e) {
+      return fallback || [];
+    }
+  }
+
+  function agregarUnicoTexto(lista, texto){
+    texto = String(texto || '').trim();
+    if(!texto) return false;
+    var clave = normalizarClave(texto);
+    var existe = lista.some(function(item){ return normalizarClave(item) === clave; });
+    if(existe) return false;
+    lista.push(texto);
+    return true;
+  }
+
+  function agregarMunicipioUnico(lista, distrito, municipio){
+    distrito = String(distrito || '').trim();
+    municipio = String(municipio || '').trim();
+    if(!distrito || !municipio) return false;
+    var distritoKey = normalizarClave(distrito);
+    var municipioKey = normalizarClave(municipio);
+    var existe = lista.some(function(item){
+      return normalizarClave(item && item.distrito) === distritoKey
+        && normalizarClave(item && item.nombre) === municipioKey;
+    });
+    if(existe) return false;
+    lista.push({ distrito: distrito, nombre: municipio });
+    return true;
+  }
+
+  function agregarAgromercadoUnico(lista, rowData){
+    if(!rowData || !rowData.nombre) return false;
+    var nombreKey = normalizarClave(rowData.nombre);
+    var distritoKey = normalizarClave(rowData.distrito);
+    var municipioKey = normalizarClave(rowData.municipio);
+    var existe = lista.some(function(item){
+      return normalizarClave(item && item.nombre) === nombreKey
+        && normalizarClave(item && item.distrito) === distritoKey
+        && normalizarClave(item && item.municipio) === municipioKey;
+    });
+    if(existe) return false;
+    lista.push(rowData);
+    return true;
+  }
+
+  function agregarPersonaUnica(lista, rowData){
+    if(!rowData || !rowData.nombre) return false;
+    var nombreKey = normalizarClave(rowData.nombre);
+    var agroKey = normalizarClave(rowData.agromercado);
+    var existe = lista.some(function(item){
+      return normalizarClave(item && item.nombre) === nombreKey
+        && normalizarClave(item && item.agromercado) === agroKey;
+    });
+    if(existe) return false;
+    rowData.local_id = rowData.local_id || ('persona-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+    rowData.supabase_synced = false;
+    lista.push(rowData);
+    return true;
+  }
+
+  function agregarBancoUnico(nombre, cuenta){
+    nombre = String(nombre || '').trim();
+    cuenta = String(cuenta || '').trim();
+    if(!nombre) return false;
+    if(window.bancosSistema && typeof bancosSistema.agregarBanco === 'function'){
+      var resultado = bancosSistema.agregarBanco(nombre, cuenta);
+      return !!(resultado && resultado.success);
+    }
+    var bancos = leerLista('bancos_sistema', []);
+    var existe = bancos.some(function(item){ return normalizarClave(item && item.nombre) === normalizarClave(nombre); });
+    if(existe) return false;
+    bancos.push({ nombre: nombre, cuenta: cuenta });
+    localStorage.setItem('bancos_sistema', JSON.stringify(bancos));
+    return true;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      var workbook = XLSX.read(new Uint8Array(e.target.result), { type:'array', cellDates:true });
+      var sheet = workbook.Sheets[workbook.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(sheet, { defval:'' });
+      if(!rows.length){
+        alertDatos('El archivo Excel esta vacio.', 'err');
+        return;
+      }
+
+      var distritos = leerLista('distritos-data', []);
+      var municipios = leerLista('municipios-data', []);
+      var agromercados = leerLista('agromercados-data', []);
+      var personas = typeof leerPersonasLocales === 'function' ? leerPersonasLocales() : leerLista('personas-data', []);
+
+      var resumen = { distritos:0, municipios:0, agromercados:0, personas:0, bancos:0, omitidos:0 };
+
+      rows.forEach(function(row){
+        var distrito = valor(row, ['Distrito', 'Departamento', 'Zona']);
+        var municipio = valor(row, ['Municipio', 'Ciudad']);
+        var agromercado = valor(row, ['Agromercado', 'Agro mercado', 'Mercado', 'Nombre Agromercado']);
+        var nombre = valor(row, ['Nombre']);
+        var tipoImportado = valor(row, ['Tipo']);
+        var referenciaImportada = valor(row, ['Referencia', 'Direccion', 'Dirección', 'Direccion/Referencia']);
+        var tipo = tipoImportado || 'SIN DEFINIR';
+        var referencia = referenciaImportada || 'SIN DEFINIR';
+        var persona = valor(row, ['Persona', 'Nombre Persona', 'Encargado', 'Responsable']);
+        var cargo = valor(row, ['Cargo', 'Puesto']);
+        var telefono = valor(row, ['Telefono', 'Teléfono', 'Celular']);
+        var banco = valor(row, ['Banco', 'Nombre Banco', 'Nombre de Banco']);
+        var cuenta = valor(row, ['Cuenta', 'Numero de Cuenta', 'Número de Cuenta', '# de cuenta']);
+        var esFilaPersona = !!(persona || cargo || telefono || tieneColumna(row, ['Persona', 'Nombre Persona', 'Encargado', 'Responsable', 'Cargo', 'Telefono', 'Teléfono']));
+        var esFilaBanco = !!(banco || cuenta || tieneColumna(row, ['Banco', 'Nombre Banco', 'Nombre de Banco', 'Cuenta', 'Numero de Cuenta', 'Número de Cuenta', '# de cuenta']));
+        var tuvoDato = false;
+
+        if(distrito && agregarUnicoTexto(distritos, distrito)) resumen.distritos++;
+        if(distrito) tuvoDato = true;
+
+        if(municipio && distrito && agregarMunicipioUnico(municipios, distrito, municipio)) resumen.municipios++;
+        if(municipio) tuvoDato = true;
+
+        if(!agromercado && nombre && (tieneColumna(row, ['Tipo', 'Referencia', 'Direccion', 'Dirección']) || (distrito && municipio))) {
+          agromercado = nombre;
+        }
+        if(agromercado && ((!esFilaPersona && !esFilaBanco) || distrito || municipio || tipoImportado || referenciaImportada)){
+          var agroRow = {
+            distrito: distrito || 'SIN DEFINIR',
+            municipio: municipio || 'SIN DEFINIR',
+            nombre: agromercado,
+            tipo: tipo,
+            referencia: referencia
+          };
+          if(agregarAgromercadoUnico(agromercados, agroRow)) resumen.agromercados++;
+          tuvoDato = true;
+        }
+
+        if(!persona && nombre && (cargo || telefono || tieneColumna(row, ['Persona', 'Nombre Persona', 'Encargado', 'Responsable']))) {
+          persona = nombre;
+        }
+        if(persona){
+          var personaRow = {
+            nombre: persona,
+            cargo: cargo,
+            telefono: telefono,
+            agromercado: agromercado || valor(row, ['Agromercado asignado']) || ''
+          };
+          if(agregarPersonaUnica(personas, personaRow)) resumen.personas++;
+          tuvoDato = true;
+        }
+
+        if(!banco && nombre && cuenta) banco = nombre;
+        if(banco){
+          if(agregarBancoUnico(banco, cuenta)) resumen.bancos++;
+          tuvoDato = true;
+        }
+
+        if(!tuvoDato) resumen.omitidos++;
+      });
+
+      localStorage.setItem('distritos-data', JSON.stringify(distritos));
+      localStorage.setItem('municipios-data', JSON.stringify(municipios));
+      localStorage.setItem('agromercados-data', JSON.stringify(agromercados));
+      localStorage.setItem('personas-data', JSON.stringify(personas));
+
+      if(typeof cargarDistritos === 'function') cargarDistritos();
+      if(typeof cargarMunicipios === 'function') cargarMunicipios();
+      if(typeof cargarAgromercados === 'function') cargarAgromercados();
+      if(typeof cargarPersonas === 'function') cargarPersonas();
+      if(typeof cargarBancos === 'function') cargarBancos();
+      if(window.bancosSistema && typeof bancosSistema.actualizarTodosLosSelectores === 'function') bancosSistema.actualizarTodosLosSelectores();
+      if(typeof cargarMunicipiosPorDistrito === 'function') cargarMunicipiosPorDistrito();
+      if(resumen.personas && typeof window.sincronizarPersonasSupabase === 'function' && window.haySesionSupabase && window.haySesionSupabase()) {
+        window.sincronizarPersonasSupabase().catch(function(error){ console.warn('Personas pendiente:', error); });
+      }
+
+      var partes = [];
+      if(resumen.distritos) partes.push('Distritos: ' + resumen.distritos);
+      if(resumen.municipios) partes.push('Municipios: ' + resumen.municipios);
+      if(resumen.agromercados) partes.push('Agromercados: ' + resumen.agromercados);
+      if(resumen.personas) partes.push('Personas: ' + resumen.personas);
+      if(resumen.bancos) partes.push('Bancos: ' + resumen.bancos);
+      if(!partes.length) partes.push('No se agregaron registros nuevos');
+      alertDatos('Importacion completada. ' + partes.join(' | '), partes.length ? 'ok' : 'err');
+    } catch(error) {
+      console.error('Error al importar datos desde Excel:', error);
+      alertDatos('Error al procesar el Excel. Revise que tenga encabezados como Distrito, Municipio, Agromercado, Persona, Banco o Cuenta.', 'err');
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 };
 
 window.eliminarAgromercado = function(index){
