@@ -49,6 +49,10 @@
       {
         "from": "../index_files",
         "to": "www/index_files"
+      },
+      {
+        "from": "../agromercado",
+        "to": "www/agromercado"
       }
     ],
     "win": {

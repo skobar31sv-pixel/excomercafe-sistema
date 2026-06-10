@@ -200,6 +200,160 @@ create table if not exists public.chat_messages (
   payload jsonb default '{}'::jsonb
 );
 
+-- Reparacion para proyectos que ya tenian tablas antiguas.
+-- CREATE TABLE IF NOT EXISTS no agrega columnas nuevas a tablas existentes.
+alter table public.ventas_agromercado add column if not exists local_id text;
+alter table public.ventas_agromercado add column if not exists user_id uuid null;
+alter table public.ventas_agromercado add column if not exists fecha date null;
+alter table public.ventas_agromercado add column if not exists dia text default '';
+alter table public.ventas_agromercado add column if not exists distrito text default '';
+alter table public.ventas_agromercado add column if not exists municipio text default '';
+alter table public.ventas_agromercado add column if not exists agromercado text default '';
+alter table public.ventas_agromercado add column if not exists arroz numeric default 0;
+alter table public.ventas_agromercado add column if not exists arroz_precocido numeric default 0;
+alter table public.ventas_agromercado add column if not exists frijol_1lb numeric default 0;
+alter table public.ventas_agromercado add column if not exists frijol_4lb numeric default 0;
+alter table public.ventas_agromercado add column if not exists aceite_750ml numeric default 0;
+alter table public.ventas_agromercado add column if not exists harina_820grs numeric default 0;
+alter table public.ventas_agromercado add column if not exists inventario_inicial numeric default 0;
+alter table public.ventas_agromercado add column if not exists ventas numeric default 0;
+alter table public.ventas_agromercado add column if not exists gastos numeric default 0;
+alter table public.ventas_agromercado add column if not exists remesa numeric default 0;
+alter table public.ventas_agromercado add column if not exists dinero_remesado numeric default 0;
+alter table public.ventas_agromercado add column if not exists banco text default '';
+alter table public.ventas_agromercado add column if not exists observaciones text default '';
+alter table public.ventas_agromercado add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.ventas_agromercado add column if not exists creado_en timestamptz not null default now();
+alter table public.ventas_agromercado add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.ventas_agromercado_pendientes add column if not exists local_id text;
+alter table public.ventas_agromercado_pendientes add column if not exists fecha date null;
+alter table public.ventas_agromercado_pendientes add column if not exists agromercado text default '';
+alter table public.ventas_agromercado_pendientes add column if not exists encargado text default '';
+alter table public.ventas_agromercado_pendientes add column if not exists estado text default 'pendiente';
+alter table public.ventas_agromercado_pendientes add column if not exists ventas numeric default 0;
+alter table public.ventas_agromercado_pendientes add column if not exists gastos numeric default 0;
+alter table public.ventas_agromercado_pendientes add column if not exists remesa numeric default 0;
+alter table public.ventas_agromercado_pendientes add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.ventas_agromercado_pendientes add column if not exists creado_en timestamptz not null default now();
+alter table public.ventas_agromercado_pendientes add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.inventario_movimientos add column if not exists local_id text;
+alter table public.inventario_movimientos add column if not exists user_id uuid null;
+alter table public.inventario_movimientos add column if not exists fecha date null;
+alter table public.inventario_movimientos add column if not exists ubicacion text default '';
+alter table public.inventario_movimientos add column if not exists lugar text default '';
+alter table public.inventario_movimientos add column if not exists tipo text default '';
+alter table public.inventario_movimientos add column if not exists referencia text default '';
+alter table public.inventario_movimientos add column if not exists arroz numeric default 0;
+alter table public.inventario_movimientos add column if not exists arroz_precocido numeric default 0;
+alter table public.inventario_movimientos add column if not exists frijol_1lb numeric default 0;
+alter table public.inventario_movimientos add column if not exists frijol_4lb numeric default 0;
+alter table public.inventario_movimientos add column if not exists aceite_750ml numeric default 0;
+alter table public.inventario_movimientos add column if not exists harina_820grs numeric default 0;
+alter table public.inventario_movimientos add column if not exists total numeric default 0;
+alter table public.inventario_movimientos add column if not exists observaciones text default '';
+alter table public.inventario_movimientos add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.inventario_movimientos add column if not exists creado_en timestamptz not null default now();
+alter table public.inventario_movimientos add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.distribucion_tiendona add column if not exists local_id text;
+alter table public.distribucion_tiendona add column if not exists user_id uuid null;
+alter table public.distribucion_tiendona add column if not exists fecha date null;
+alter table public.distribucion_tiendona add column if not exists origen text default 'Tiendona';
+alter table public.distribucion_tiendona add column if not exists distrito text default '';
+alter table public.distribucion_tiendona add column if not exists municipio text default '';
+alter table public.distribucion_tiendona add column if not exists agromercado text default '';
+alter table public.distribucion_tiendona add column if not exists arroz numeric default 0;
+alter table public.distribucion_tiendona add column if not exists arroz_precocido numeric default 0;
+alter table public.distribucion_tiendona add column if not exists frijol_1lb numeric default 0;
+alter table public.distribucion_tiendona add column if not exists frijol_4lb numeric default 0;
+alter table public.distribucion_tiendona add column if not exists aceite_750ml numeric default 0;
+alter table public.distribucion_tiendona add column if not exists harina_820grs numeric default 0;
+alter table public.distribucion_tiendona add column if not exists total numeric default 0;
+alter table public.distribucion_tiendona add column if not exists observaciones text default '';
+alter table public.distribucion_tiendona add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.distribucion_tiendona add column if not exists creado_en timestamptz not null default now();
+alter table public.distribucion_tiendona add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.distribucion_cda add column if not exists local_id text;
+alter table public.distribucion_cda add column if not exists user_id uuid null;
+alter table public.distribucion_cda add column if not exists fecha date null;
+alter table public.distribucion_cda add column if not exists origen text default 'CDA';
+alter table public.distribucion_cda add column if not exists distrito text default '';
+alter table public.distribucion_cda add column if not exists municipio text default '';
+alter table public.distribucion_cda add column if not exists cda text default '';
+alter table public.distribucion_cda add column if not exists arroz numeric default 0;
+alter table public.distribucion_cda add column if not exists arroz_precocido numeric default 0;
+alter table public.distribucion_cda add column if not exists frijol_1lb numeric default 0;
+alter table public.distribucion_cda add column if not exists frijol_4lb numeric default 0;
+alter table public.distribucion_cda add column if not exists aceite_750ml numeric default 0;
+alter table public.distribucion_cda add column if not exists harina_820grs numeric default 0;
+alter table public.distribucion_cda add column if not exists total numeric default 0;
+alter table public.distribucion_cda add column if not exists observaciones text default '';
+alter table public.distribucion_cda add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.distribucion_cda add column if not exists creado_en timestamptz not null default now();
+alter table public.distribucion_cda add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.personas_sistema add column if not exists local_id text;
+alter table public.personas_sistema add column if not exists user_id uuid null;
+alter table public.personas_sistema add column if not exists nombre text default '';
+alter table public.personas_sistema add column if not exists cargo text default '';
+alter table public.personas_sistema add column if not exists telefono text default '';
+alter table public.personas_sistema add column if not exists agromercado text default '';
+alter table public.personas_sistema add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.personas_sistema add column if not exists creado_en timestamptz not null default now();
+alter table public.personas_sistema add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.estado_cuadres add column if not exists local_id text;
+alter table public.estado_cuadres add column if not exists user_id uuid null;
+alter table public.estado_cuadres add column if not exists tipo text default '';
+alter table public.estado_cuadres add column if not exists fecha date null;
+alter table public.estado_cuadres add column if not exists grupo text default '';
+alter table public.estado_cuadres add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.estado_cuadres add column if not exists creado_en timestamptz not null default now();
+alter table public.estado_cuadres add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.backups add column if not exists local_id text;
+alter table public.backups add column if not exists user_id uuid null;
+alter table public.backups add column if not exists creado_en timestamptz not null default now();
+alter table public.backups add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.backups add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.backup_logs add column if not exists user_id uuid null;
+alter table public.backup_logs add column if not exists fecha text default '';
+alter table public.backup_logs add column if not exists hora text default '';
+alter table public.backup_logs add column if not exists origen text default '';
+alter table public.backup_logs add column if not exists estado text default '';
+alter table public.backup_logs add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.backup_logs add column if not exists creado_en timestamptz not null default now();
+alter table public.backup_logs add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.presence_online add column if not exists client_id text;
+alter table public.presence_online add column if not exists user_id uuid null;
+alter table public.presence_online add column if not exists nombre text default '';
+alter table public.presence_online add column if not exists ultimo_visto timestamptz not null default now();
+alter table public.presence_online add column if not exists payload jsonb default '{}'::jsonb;
+alter table public.presence_online add column if not exists creado_en timestamptz not null default now();
+alter table public.presence_online add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.chat_messages add column if not exists client_id text default '';
+alter table public.chat_messages add column if not exists user_id uuid null;
+alter table public.chat_messages add column if not exists nombre text default '';
+alter table public.chat_messages add column if not exists mensaje text default '';
+alter table public.chat_messages add column if not exists creado_en timestamptz not null default now();
+alter table public.chat_messages add column if not exists payload jsonb default '{}'::jsonb;
+
+create unique index if not exists ventas_agromercado_local_id_uidx on public.ventas_agromercado(local_id);
+create unique index if not exists ventas_agromercado_pendientes_local_id_uidx on public.ventas_agromercado_pendientes(local_id);
+create unique index if not exists inventario_movimientos_local_id_uidx on public.inventario_movimientos(local_id);
+create unique index if not exists distribucion_tiendona_local_id_uidx on public.distribucion_tiendona(local_id);
+create unique index if not exists distribucion_cda_local_id_uidx on public.distribucion_cda(local_id);
+create unique index if not exists personas_sistema_local_id_uidx on public.personas_sistema(local_id);
+create unique index if not exists estado_cuadres_local_id_uidx on public.estado_cuadres(local_id);
+create unique index if not exists backups_local_id_uidx on public.backups(local_id);
+create unique index if not exists presence_online_client_id_uidx on public.presence_online(client_id);
+
 -- Indices utiles
 create index if not exists idx_ventas_agromercado_fecha on public.ventas_agromercado(fecha);
 create index if not exists idx_ventas_agromercado_agro_fecha on public.ventas_agromercado(agromercado, fecha);

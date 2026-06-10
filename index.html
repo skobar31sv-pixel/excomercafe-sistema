@@ -18509,6 +18509,28 @@ document.addEventListener('DOMContentLoaded', function() {
     if (el) el.textContent = message;
   }
 
+  function tablaSupabaseLabel(table){
+    return {
+      ventas_agromercado: 'ventas',
+      inventario_movimientos: 'inventario',
+      distribucion_tiendona: 'distribucion Tiendona',
+      distribucion_cda: 'distribucion CDA',
+      personas_sistema: 'personas',
+      estado_cuadres: 'cuadres'
+    }[table] || table;
+  }
+
+  function resumirErroresSupabase(errores){
+    errores = Array.isArray(errores) ? errores : [];
+    return errores.map(function(error){
+      var texto = String(error || '');
+      var partes = texto.split(':');
+      var tabla = partes.shift() || '';
+      var detalle = partes.join(':').trim();
+      return tablaSupabaseLabel(tabla.trim()) + (detalle ? ' (' + detalle + ')' : '');
+    }).join(' | ');
+  }
+
   var LOCAL_STORAGE_SYNC_KEYS = [
     { key:'exc_agro_hist', label:'ventas' },
     { key:'inventario-data', label:'inventario' },
@@ -19106,13 +19128,18 @@ document.addEventListener('DOMContentLoaded', function() {
       var refreshed = options.noInterrupt ? refreshAfterOnlineSyncSeguro() : (refreshAfterOnlineSync(), true);
 
       if (errores.length) {
+        window.excomercafeUltimosErroresSupabase = errores.slice();
+        var detalleErrores = resumirErroresSupabase(errores);
         setOnlineIndicator('offline', 'Sincronizacion parcial');
-        currentOnlineStatus('Sincronizacion parcial. Revisa tablas pendientes en Supabase.');
+        currentOnlineStatus('Sincronizacion parcial: ' + detalleErrores);
         if (typeof renderLocalStorageSyncEstado === 'function') renderLocalStorageSyncEstado();
-        if (!options.silent && typeof showToast === 'function') showToast('Sincronizacion parcial. Faltan tablas en Supabase.');
+        var check = document.getElementById('sync-check-status');
+        if (check) check.textContent = 'Tablas pendientes en Supabase: ' + detalleErrores + '. Ejecuta supabase-setup.sql y vuelve a sincronizar.';
+        if (!options.silent && typeof showToast === 'function') showToast('Sincronizacion parcial: ' + detalleErrores);
         return { ok: false, uploaded: totalUploaded, downloaded: totalDownloaded, errores: errores };
       }
 
+      window.excomercafeUltimosErroresSupabase = [];
       setOnlineIndicator('online', 'En linea');
       currentOnlineStatus((refreshed ? 'En linea.' : 'En linea. Refresco pendiente mientras digitas.') + ' Subidos: ' + totalUploaded + ' | Recibidos: ' + totalDownloaded + ' | ' + fechaHoraActualVistaSistema());
       if (typeof renderLocalStorageSyncEstado === 'function') renderLocalStorageSyncEstado();
