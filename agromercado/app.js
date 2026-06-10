@@ -983,6 +983,7 @@ async function cargarValoresInicialesAgromercado(agromercado){
   var fecha = fechaSeleccionada();
   var anteriores = {};
   var nuevos = {};
+  var ultimaFechaAprobada = '';
 
   try{
     var approvedRows = await fetchSupabase('/rest/v1/ventas_agromercado?select=fecha,agromercado,ventas,gastos,remesa,banco,observaciones,payload,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&fecha=eq.' + encodeURIComponent(fecha) + '&order=creado_en.desc&limit=1');
@@ -999,12 +1000,21 @@ async function cargarValoresInicialesAgromercado(agromercado){
   try{
     var prevRows = await fetchSupabase('/rest/v1/ventas_agromercado?select=payload,fecha,creado_en&agromercado=eq.' + encodeURIComponent(agromercado) + '&fecha=lt.' + encodeURIComponent(fecha) + '&order=fecha.desc,creado_en.desc&limit=1');
     var prevPayload = prevRows && prevRows[0] && prevRows[0].payload ? prevRows[0].payload : null;
+    ultimaFechaAprobada = prevRows && prevRows[0] && prevRows[0].fecha ? String(prevRows[0].fecha).slice(0, 10) : '';
     PRODUCTOS.forEach(function(prod){
       anteriores[prod.key] = productoValueFromPayload(prevPayload && prevPayload.inventario_final, prod.key);
     });
   }catch(e){}
 
   try{
+    function rangoDistribucionQuery(){
+      var query = ultimaFechaAprobada
+        ? '&fecha=gt.' + encodeURIComponent(ultimaFechaAprobada)
+        : '';
+      query += '&fecha=lte.' + encodeURIComponent(fecha);
+      return query + '&order=fecha.asc&limit=5000';
+    }
+
     function sumarMercaderiaNueva(rows){
       (rows || []).forEach(function(row){
         PRODUCTOS.forEach(function(prod){
@@ -1017,16 +1027,20 @@ async function cargarValoresInicialesAgromercado(agromercado){
       });
     }
 
-    var distTiendonaRows = await fetchSupabase('/rest/v1/distribucion_tiendona?select=arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload&agromercado=eq.' + encodeURIComponent(agromercado) + '&fecha=eq.' + encodeURIComponent(fecha) + '&limit=1000');
+    var distTiendonaRows = await fetchSupabase('/rest/v1/distribucion_tiendona?select=fecha,arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload&agromercado=eq.' + encodeURIComponent(agromercado) + rangoDistribucionQuery());
     sumarMercaderiaNueva(distTiendonaRows);
 
-    var distCdaRows = await fetchSupabase('/rest/v1/distribucion_cda?select=arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload&cda=eq.' + encodeURIComponent(agromercado) + '&fecha=eq.' + encodeURIComponent(fecha) + '&limit=1000');
+    var distCdaRows = await fetchSupabase('/rest/v1/distribucion_cda?select=fecha,arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload&cda=eq.' + encodeURIComponent(agromercado) + rangoDistribucionQuery());
     sumarMercaderiaNueva(distCdaRows);
   }catch(e){}
 
   if (!PRODUCTOS.some(function(prod){ return n(nuevos[prod.key]) > 0; })) {
     try{
-      var distCdaFechaRows = await fetchSupabase('/rest/v1/distribucion_cda?select=cda,arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload&fecha=eq.' + encodeURIComponent(fecha) + '&limit=1000');
+      var rangoFallback = ultimaFechaAprobada
+        ? '&fecha=gt.' + encodeURIComponent(ultimaFechaAprobada)
+        : '';
+      rangoFallback += '&fecha=lte.' + encodeURIComponent(fecha) + '&order=fecha.asc&limit=5000';
+      var distCdaFechaRows = await fetchSupabase('/rest/v1/distribucion_cda?select=fecha,cda,arroz,arroz_precocido,frijol_1lb,frijol_4lb,aceite_750ml,harina_820grs,payload' + rangoFallback);
       (distCdaFechaRows || []).forEach(function(row){
         var payload = row && row.payload && typeof row.payload === 'object' ? row.payload : {};
         var destino = String(row && row.cda || payload.cda || payload.agromercado || payload.destino || '').trim();
