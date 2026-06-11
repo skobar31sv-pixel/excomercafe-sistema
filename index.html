@@ -5731,6 +5731,28 @@ function revertirInventarioPorVenta(registro){
   }
 }
 
+function claveVentaAgromercado(registro){
+  registro = registro || {};
+  return [
+    String(registro.fecha || '').slice(0, 10),
+    normText(registro.agromercado || registro.nombre || '')
+  ].join('|');
+}
+
+function idVentaAgromercado(registro){
+  registro = registro || {};
+  return String(registro.local_id || registro.id || registro.localId || registro.ts || registro.timestamp || '').trim();
+}
+
+function esMismoReporteVentaAgromercado(registro, objetivo){
+  var idRegistro = idVentaAgromercado(registro);
+  var idObjetivo = idVentaAgromercado(objetivo);
+  if(idRegistro && idObjetivo && idRegistro === idObjetivo) return true;
+  var claveRegistro = claveVentaAgromercado(registro);
+  var claveObjetivo = claveVentaAgromercado(objetivo);
+  return claveRegistro !== '|' && claveRegistro === claveObjetivo;
+}
+
 window.eliminarRegistro = async function(index){
   if(!confirm('¿Seguro que deseas eliminar este registro?')) return;
   
@@ -5738,8 +5760,17 @@ window.eliminarRegistro = async function(index){
   if(index < 0 || index >= hist.length) return;
   
   var registroEliminado = hist[index];
-  revertirInventarioPorVenta(registroEliminado);
-  hist.splice(index, 1);
+  var registrosEliminados = [];
+  hist = hist.filter(function(registro){
+    if(esMismoReporteVentaAgromercado(registro, registroEliminado)){
+      registrosEliminados.push(registro);
+      return false;
+    }
+    return true;
+  });
+  registrosEliminados.forEach(function(registro){
+    revertirInventarioPorVenta(registro);
+  });
   localStorage.setItem('exc_agro_hist', JSON.stringify(hist));
   var localIdValue = registroEliminado.local_id || registroEliminado.id || registroEliminado.ts || registroEliminado.timestamp;
   var borradoRemoto = false;
